@@ -1,1 +1,0 @@
-# Here goes the Money Moved metrics calculus

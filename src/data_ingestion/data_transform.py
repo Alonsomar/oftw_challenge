@@ -1,5 +1,5 @@
 import pandas as pd
-from data_read import read_data
+from src.data_ingestion.data_read import read_data
 from log_config import get_logger
 
 logger = get_logger(__name__)

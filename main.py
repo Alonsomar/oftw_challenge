@@ -1,16 +1,21 @@
-# This is a sample Python script.
+"""
+Punto de entrada para ejecutar la aplicación Dash.
+"""
 
-# Press Mayús+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+import dash
+import dash_bootstrap_components as dbc
+from src.components.layout import create_layout
+from src.callbacks.callbacks import register_callbacks
 
+# Inicializar la app
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+# Configurar el layout dinámico
+app.layout = create_layout
 
+# Registrar callbacks
+register_callbacks(app)
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+# Ejecutar el servidor
+if __name__ == "__main__":
+    app.run_server(debug=True, port=8050)

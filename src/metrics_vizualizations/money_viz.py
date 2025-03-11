@@ -1,1 +1,92 @@
-# Here goes the Money Moved metrics visualizations
+"""
+Genera visualizaciones interactivas para 'Money Moved' y 'Counterfactual Money Moved'.
+"""
+
+import plotly.express as px
+import plotly.graph_objects as go
+import pandas as pd
+from log_config import get_logger
+from src.metrics_calculations.money_metrics import calculate_money_moved, calculate_counterfactual_money_moved
+
+logger = get_logger(__name__)
+
+def plot_money_moved(monthly_money_moved: pd.DataFrame, total_money_moved: float) -> go.Figure:
+    """
+    Genera un gráfico de Money Moved a lo largo del tiempo.
+
+    :param monthly_money_moved: DataFrame con Money Moved agregado por mes.
+    :param total_money_moved: Valor total de Money Moved.
+    :return: Figura de Plotly.
+    """
+    if monthly_money_moved.empty:
+        logger.warning("El DataFrame de Money Moved está vacío. No se generará gráfico.")
+        return go.Figure()
+
+    fig = px.line(
+        monthly_money_moved,
+        x="year_month",
+        y="amount_usd",
+        title=f"Money Moved Over Time (Total: ${total_money_moved:,.2f})",
+        labels={"year_month": "Month", "amount_usd": "Money Moved (USD)"},
+        markers=True
+    )
+
+    fig.update_layout(
+        xaxis_title="Month",
+        yaxis_title="Money Moved (USD)",
+        template="plotly_white"
+    )
+
+    return fig
+
+def plot_counterfactual_money_moved(monthly_counterfactual_money_moved: pd.DataFrame, total_counterfactual_money_moved: float) -> go.Figure:
+    """
+    Genera un gráfico de Counterfactual Money Moved a lo largo del tiempo.
+
+    :param monthly_counterfactual_money_moved: DataFrame con Money Moved contrafactual agregado por mes.
+    :param total_counterfactual_money_moved: Valor total de Money Moved contrafactual.
+    :return: Figura de Plotly.
+    """
+    if monthly_counterfactual_money_moved.empty:
+        logger.warning("El DataFrame de Money Moved contrafactual está vacío. No se generará gráfico.")
+        return go.Figure()
+
+    fig = px.bar(
+        monthly_counterfactual_money_moved,
+        x="year_month",
+        y="counterfactual_amount",
+        title=f"Counterfactual Money Moved Over Time (Total: ${total_counterfactual_money_moved:,.2f})",
+        labels={"year_month": "Month", "counterfactual_amount": "Counterfactual Money Moved (USD)"},
+        text_auto=True
+    )
+
+    fig.update_layout(
+        xaxis_title="Month",
+        yaxis_title="Counterfactual Money Moved (USD)",
+        template="plotly_white"
+    )
+
+    return fig
+
+if __name__ == "__main__":
+    from src.data_ingestion.data_read import read_data
+    from src.data_ingestion.data_transform import clean_data
+
+    # Cargar y transformar datos
+    dfs = read_data()
+    transformed_dfs = clean_data(dfs)
+
+    # Obtener pagos
+    payments_df = transformed_dfs.get("payments", pd.DataFrame())
+
+    # Calcular métricas
+    monthly_money_moved, total_money_moved = calculate_money_moved(payments_df)
+    monthly_counterfactual_money_moved, total_counterfactual_money_moved = calculate_counterfactual_money_moved(payments_df)
+
+    # Generar gráficos
+    fig1 = plot_money_moved(monthly_money_moved, total_money_moved)
+    fig2 = plot_counterfactual_money_moved(monthly_counterfactual_money_moved, total_counterfactual_money_moved)
+
+    # Mostrar gráficos
+    fig1.show()
+    fig2.show()
