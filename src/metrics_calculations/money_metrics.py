@@ -27,10 +27,6 @@ def calculate_money_moved(df: pd.DataFrame) -> pd.DataFrame:
     # Filtrar portafolios excluidos
     df_filtered = df[~df["portfolio"].isin(EXCLUDED_PORTFOLIOS)].copy()
 
-    # Convertir fechas a formato datetime si no están en formato adecuado
-    if not pd.api.types.is_datetime64_any_dtype(df_filtered["date"]):
-        df_filtered["date"] = pd.to_datetime(df_filtered["date"], errors="coerce")
-
     # Calcular Money Moved por mes
     # Convertir `Period` a `str` para evitar errores con Plotly
     df_filtered["year_month"] = df_filtered["date"].dt.to_period("M").astype(str)
@@ -58,10 +54,6 @@ def calculate_counterfactual_money_moved(df: pd.DataFrame) -> pd.DataFrame:
 
     # Filtrar portafolios excluidos
     df_filtered = df[~df["portfolio"].isin(EXCLUDED_PORTFOLIOS)].copy()
-
-    # Convertir fechas a formato datetime si no están en formato adecuado
-    if not pd.api.types.is_datetime64_any_dtype(df_filtered["date"]):
-        df_filtered["date"] = pd.to_datetime(df_filtered["date"], errors="coerce")
 
     # Aplicar el factor contrafactual
     df_filtered["counterfactual_amount"] = df_filtered["amount_usd"] * df_filtered["counterfactuality"]
@@ -111,18 +103,24 @@ def calculate_money_moved_by_donation_type(payments_df: pd.DataFrame, pledges_df
         logger.warning("Uno de los DataFrames está vacío. No se calculará Money Moved por tipo de donación.")
         return pd.DataFrame()
 
+    # Verificar que 'pledge_id' está en ambos DataFrames
+    if "pledge_id" not in payments_df.columns or "pledge_id" not in pledges_df.columns:
+        logger.error("No se encontró 'pledge_id' en los DataFrames, no se puede hacer merge.")
+        return pd.DataFrame()
+
     # Unir `payments` con `pledges` en `pledge_id` para obtener la frecuencia
     df_merged = payments_df.merge(pledges_df[['pledge_id', 'frequency']], on='pledge_id', how='left')
 
     # Filtrar portafolios excluidos
     df_filtered = df_merged[~df_merged["portfolio"].isin(EXCLUDED_PORTFOLIOS)].copy()
 
-    # Verificar si la columna `frequency` existe antes de aplicar transformaciones
-    if "frequency" in df_filtered.columns:
-        df_filtered["donation_type"] = df_filtered["frequency"].apply(lambda x: "Recurring" if x in ["Monthly", "Annually", "Quarterly"] else "One-Time")
-    else:
-        logger.warning("La columna 'frequency' no está presente después del merge. Se asignará como 'Desconocido'.")
-        df_filtered["donation_type"] = "Unknown"
+    # Manejar valores NaN en 'frequency'
+    df_filtered.fillna({"frequency": "Unknown"}, inplace=True)
+
+    # Determinar si es Recurring o One-Time
+    df_filtered["donation_type"] = df_filtered["frequency"].apply(
+        lambda x: "Recurring" if x in ["Monthly", "Annually", "Quarterly"] else "One-Time"
+    )
 
     # Agrupar Money Moved por tipo de donación
     donation_type_money_moved = df_filtered.groupby("donation_type")["amount_usd"].sum().reset_index()
@@ -142,6 +140,9 @@ def calculate_active_arr(df: pd.DataFrame) -> float:
         return 0.0
 
     active_pledges = df[df["pledge_status"] == "Active donor"].copy()
+
+    # Manejar valores nulos en 'frequency'
+    active_pledges["frequency"].fillna("Unknown", inplace=True)
 
     # Convertir montos a ARR dependiendo de la frecuencia de pago
     def annualize_amount(row):
@@ -207,3 +208,43 @@ if __name__ == "__main__":
     print(monthly_counterfactual_money_moved.head())
 
     print(f"\nTotal Counterfactual Money Moved: ${total_counterfactual_money_moved:,.2f}")
+
+
+def calculate_money_moved_by_source(payments_df: pd.DataFrame, pledges_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Calcula Money Moved por fuente (capítulo de donante y tipo de capítulo).
+
+    :param payments_df: DataFrame de pagos.
+    :param pledges_df: DataFrame de pledges.
+    :return: DataFrame con Money Moved por fuente.
+    """
+    if payments_df.empty or pledges_df.empty:
+        logger.warning("Uno de los DataFrames está vacío. No se calculará Money Moved por fuente.")
+        return pd.DataFrame()
+
+    # Verificar que las columnas necesarias existan antes de hacer merge
+    required_columns = {"pledge_id", "donor_chapter", "chapter_type"}
+    if not required_columns.issubset(set(pledges_df.columns)):
+        logger.error(f"Faltan columnas necesarias en pledges_df: {required_columns - set(pledges_df.columns)}")
+        return pd.DataFrame()
+
+    # Merge entre payments y pledges para obtener donor_chapter y chapter_type
+    df_merged = payments_df.merge(
+        pledges_df[["pledge_id", "donor_chapter", "chapter_type"]],
+        on="pledge_id",
+        how="left"
+    )
+
+    # Filtrar portafolios excluidos
+    df_filtered = df_merged[~df_merged["portfolio"].isin(EXCLUDED_PORTFOLIOS)].copy()
+
+    # Manejar valores nulos en donor_chapter y chapter_type
+    df_filtered.fillna({"donor_chapter": "Unknown",
+                        "chapter_type": "Unknown"}, inplace=True)
+
+    # Agrupar por fuente y sumar Money Moved
+    money_moved_by_source = df_filtered.groupby(["donor_chapter", "chapter_type"])["amount_usd"].sum().reset_index()
+
+    logger.info("Calculado Money Moved por fuente.")
+
+    return money_moved_by_source

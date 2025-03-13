@@ -117,6 +117,33 @@ def plot_money_moved_by_donation_type(df: pd.DataFrame) -> go.Figure:
     fig.update_layout(template="plotly_white")
     return fig
 
+import plotly.express as px
+
+def plot_money_moved_treemap(df: pd.DataFrame) -> go.Figure:
+    """
+    Genera un Treemap para visualizar Money Moved por fuente.
+
+    :param df: DataFrame con Money Moved por fuente.
+    :return: Figura de Plotly.
+    """
+    if df.empty:
+        logger.warning("El DataFrame de Money Moved por fuente está vacío. No se generará gráfico.")
+        return go.Figure()
+
+    fig = px.treemap(
+        df,
+        path=["chapter_type", "donor_chapter"],
+        values="amount_usd",
+        title="Money Moved by Source (Treemap)",
+        color="amount_usd",
+        color_continuous_scale="blues"
+    )
+
+    fig.update_layout(template="plotly_white")
+
+    return fig
+
+
 
 if __name__ == "__main__":
     from src.data_ingestion.data_read import read_data
@@ -140,3 +167,5 @@ if __name__ == "__main__":
     # Mostrar gráficos
     fig1.show()
     fig2.show()
+
+

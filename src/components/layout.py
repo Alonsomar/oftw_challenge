@@ -58,4 +58,11 @@ def create_layout():
             ], width=6),
         ], style={"marginBottom": "40px"}),
 
+        dbc.Row([
+            dbc.Col([
+                html.H3("Money Moved by Source (Treemap)"),
+                dcc.Graph(id="money-moved-source-graph", figure=go.Figure())  # Callback actualizará esto
+            ], width=12),
+        ], style={"marginBottom": "40px"}),
+
     ], fluid=True)
