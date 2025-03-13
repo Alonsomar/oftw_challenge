@@ -5,8 +5,8 @@ Define los callbacks para actualizar los gráficos dinámicamente según los fil
 from dash.dependencies import Input, Output
 from src.data_ingestion.data_loader import load_clean_data
 from src.utils.filtering import filter_dataframe
-from src.metrics_calculations.money_metrics import calculate_money_moved, calculate_counterfactual_money_moved
-from src.metrics_vizualizations.money_viz import plot_money_moved, plot_counterfactual_money_moved
+from src.metrics_calculations.money_metrics import calculate_money_moved, calculate_counterfactual_money_moved, calculate_money_moved_by_donation_type, calculate_money_moved_by_platform,calculate_active_arr, calculate_pledge_attrition_rate
+from src.metrics_vizualizations.money_viz import plot_money_moved, plot_counterfactual_money_moved, plot_money_moved_by_platform, plot_money_moved_by_donation_type
 
 def register_callbacks(app):
     """
@@ -60,3 +60,38 @@ def register_callbacks(app):
         portfolio_options = [{"label": p, "value": p} for p in sorted(payments_df["portfolio"].dropna().unique())]
 
         return fig1, fig2, year_options, portfolio_options
+
+    @app.callback(
+        [Output("money-moved-platform-graph", "figure"),
+         Output("money-moved-donation-type-graph", "figure")],
+        [Input("year-filter", "value"),
+         Input("portfolio-filter", "value")]
+    )
+    def update_additional_metrics(selected_years, selected_portfolios):
+        """
+        Actualiza gráficos de Money Moved por plataforma y por tipo de donación.
+        """
+
+        dfs = load_clean_data()
+        payments_df = dfs.get("payments", None)
+        pledges_df = dfs.get("pledges", None)  # Se obtiene pledges_df para obtener `frequency`
+
+        if payments_df is None or payments_df.empty or pledges_df is None or pledges_df.empty:
+            return {}, {}
+
+        filters = {}
+        if selected_years:
+            filters["year"] = selected_years
+        if selected_portfolios:
+            filters["portfolio"] = selected_portfolios
+
+        filtered_df = filter_dataframe(payments_df, filters)
+
+        # Corrección: solo pasamos filtered_df a la función de visualización
+        fig_platform = plot_money_moved_by_platform(calculate_money_moved_by_platform(filtered_df))
+
+        # Corrección: `calculate_money_moved_by_donation_type()` usa `pledges_df`
+        donation_type_data = calculate_money_moved_by_donation_type(filtered_df, pledges_df)
+        fig_donation_type = plot_money_moved_by_donation_type(donation_type_data)
+
+        return fig_platform, fig_donation_type

@@ -44,5 +44,18 @@ def create_layout():
                 html.H3("Counterfactual Money Moved"),
                 dcc.Graph(id="counterfactual-money-moved-graph", figure=go.Figure())  # Callback actualizará esto
             ], width=12)
-        ])
+        ]),
+
+        dbc.Row([
+            dbc.Col([
+                html.H3("Money Moved by Payment Platform"),
+                dcc.Graph(id="money-moved-platform-graph", figure=go.Figure())  # Callback actualizará esto
+            ], width=6),
+
+            dbc.Col([
+                html.H3("Money Moved by Donation Type"),
+                dcc.Graph(id="money-moved-donation-type-graph", figure=go.Figure())  # Callback actualizará esto
+            ], width=6),
+        ], style={"marginBottom": "40px"}),
+
     ], fluid=True)

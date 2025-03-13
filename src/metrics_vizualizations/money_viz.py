@@ -68,6 +68,56 @@ def plot_counterfactual_money_moved(monthly_counterfactual_money_moved: pd.DataF
 
     return fig
 
+
+"""
+Genera visualizaciones interactivas para nuevas métricas de Money Moved.
+"""
+
+import plotly.express as px
+import plotly.graph_objects as go
+import pandas as pd
+from src.metrics_calculations.money_metrics import (
+    calculate_money_moved_by_platform,
+    calculate_money_moved_by_donation_type
+)
+
+
+def plot_money_moved_by_platform(df: pd.DataFrame) -> go.Figure:
+    """
+    Genera un gráfico de barras para Money Moved por plataforma de pago.
+
+    :param df: DataFrame con Money Moved por plataforma.
+    :return: Figura de Plotly.
+    """
+    if df.empty:
+        logger.warning("El DataFrame de Money Moved por plataforma está vacío. No se generará gráfico.")
+        return go.Figure()
+
+    fig = px.bar(df, x="payment_platform", y="amount_usd", title="Money Moved by Payment Platform",
+                 labels={"payment_platform": "Payment Platform", "amount_usd": "Money Moved (USD)"},
+                 text_auto=True)
+
+    fig.update_layout(template="plotly_white")
+    return fig
+
+def plot_money_moved_by_donation_type(df: pd.DataFrame) -> go.Figure:
+    """
+    Genera un gráfico de pastel para Money Moved por tipo de donación (One-Time vs Recurring).
+
+    :param df: DataFrame con Money Moved por tipo de donación.
+    :return: Figura de Plotly.
+    """
+    if df.empty:
+        logger.warning("El DataFrame de Money Moved por tipo de donación está vacío. No se generará gráfico.")
+        return go.Figure()
+
+    fig = px.pie(df, names="donation_type", values="amount_usd", title="Money Moved by Donation Type",
+                 hole=0.4, labels={"donation_type": "Donation Type", "amount_usd": "Money Moved (USD)"})
+
+    fig.update_layout(template="plotly_white")
+    return fig
+
+
 if __name__ == "__main__":
     from src.data_ingestion.data_read import read_data
     from src.data_ingestion.data_transform import clean_data

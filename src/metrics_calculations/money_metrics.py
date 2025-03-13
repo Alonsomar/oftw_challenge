@@ -80,6 +80,107 @@ def calculate_counterfactual_money_moved(df: pd.DataFrame) -> pd.DataFrame:
     return monthly_counterfactual_money_moved, total_counterfactual_money_moved
 
 
+def calculate_money_moved_by_platform(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Calcula el Money Moved total, agrupado por plataforma de pago.
+
+    :param df: DataFrame de pagos.
+    :return: DataFrame con Money Moved por plataforma.
+    """
+    if df.empty:
+        logger.warning("El DataFrame de pagos está vacío. No se calculará Money Moved por plataforma.")
+        return pd.DataFrame()
+
+    df_filtered = df[~df["portfolio"].isin(EXCLUDED_PORTFOLIOS)].copy()
+
+    platform_money_moved = df_filtered.groupby("payment_platform")["amount_usd"].sum().reset_index()
+    logger.info("Calculado Money Moved por plataforma.")
+
+    return platform_money_moved
+
+def calculate_money_moved_by_donation_type(payments_df: pd.DataFrame, pledges_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Calcula Money Moved separado en donaciones 'One-Time' y 'Recurring',
+    basándose en la columna 'frequency' de pledges.
+
+    :param payments_df: DataFrame de pagos.
+    :param pledges_df: DataFrame de pledges (para obtener la frecuencia de pago).
+    :return: DataFrame con Money Moved por tipo de donación.
+    """
+    if payments_df.empty or pledges_df.empty:
+        logger.warning("Uno de los DataFrames está vacío. No se calculará Money Moved por tipo de donación.")
+        return pd.DataFrame()
+
+    # Unir `payments` con `pledges` en `pledge_id` para obtener la frecuencia
+    df_merged = payments_df.merge(pledges_df[['pledge_id', 'frequency']], on='pledge_id', how='left')
+
+    # Filtrar portafolios excluidos
+    df_filtered = df_merged[~df_merged["portfolio"].isin(EXCLUDED_PORTFOLIOS)].copy()
+
+    # Verificar si la columna `frequency` existe antes de aplicar transformaciones
+    if "frequency" in df_filtered.columns:
+        df_filtered["donation_type"] = df_filtered["frequency"].apply(lambda x: "Recurring" if x in ["Monthly", "Annually", "Quarterly"] else "One-Time")
+    else:
+        logger.warning("La columna 'frequency' no está presente después del merge. Se asignará como 'Desconocido'.")
+        df_filtered["donation_type"] = "Unknown"
+
+    # Agrupar Money Moved por tipo de donación
+    donation_type_money_moved = df_filtered.groupby("donation_type")["amount_usd"].sum().reset_index()
+    logger.info("Calculado Money Moved por tipo de donación.")
+
+    return donation_type_money_moved
+
+def calculate_active_arr(df: pd.DataFrame) -> float:
+    """
+    Calcula el Annualized Run Rate (ARR) de donaciones activas.
+
+    :param df: DataFrame de pledges.
+    :return: Active ARR total en USD.
+    """
+    if df.empty:
+        logger.warning("El DataFrame de pledges está vacío. No se calculará Active ARR.")
+        return 0.0
+
+    active_pledges = df[df["pledge_status"] == "Active donor"].copy()
+
+    # Convertir montos a ARR dependiendo de la frecuencia de pago
+    def annualize_amount(row):
+        if row["frequency"] == "Monthly":
+            return row["contribution_amount"] * 12
+        elif row["frequency"] == "Quarterly":
+            return row["contribution_amount"] * 4
+        elif row["frequency"] == "Annually":
+            return row["contribution_amount"]
+        else:
+            return 0  # Omitir pagos no especificados
+
+    active_pledges["annualized_amount"] = active_pledges.apply(annualize_amount, axis=1)
+
+    total_arr = active_pledges["annualized_amount"].sum()
+    logger.info(f"Active ARR calculado: ${total_arr:,.2f}")
+
+    return total_arr
+
+def calculate_pledge_attrition_rate(df: pd.DataFrame) -> float:
+    """
+    Calcula el Pledge Attrition Rate basado en pledges cancelados.
+
+    :param df: DataFrame de pledges.
+    :return: Proporción de pledges que han sido cancelados.
+    """
+    if df.empty:
+        logger.warning("El DataFrame de pledges está vacío. No se calculará Pledge Attrition Rate.")
+        return 0.0
+
+    total_pledges = df.shape[0]
+    churned_pledges = df[df["pledge_status"].isin(["Payment failure", "Churned donor"])].shape[0]
+
+    attrition_rate = churned_pledges / total_pledges if total_pledges > 0 else 0.0
+    logger.info(f"Pledge Attrition Rate calculado: {attrition_rate:.2%}")
+
+    return attrition_rate
+
+
 if __name__ == "__main__":
     from src.data_ingestion.data_read import read_data
     from src.data_ingestion.data_transform import clean_data
