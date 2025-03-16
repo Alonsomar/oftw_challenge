@@ -1,6 +1,7 @@
 import pandas as pd
 from src.data_ingestion.data_read import read_data
 from log_config import get_logger
+from src.utils.cache import cache
 
 logger = get_logger(__name__)
 
@@ -31,6 +32,7 @@ def convert_currency(df: pd.DataFrame, amount_col: str, currency_col: str) -> pd
     return df
 
 
+@cache.memoize(timeout=300)
 def clean_data(dfs: dict) -> dict:
     """Aplica transformaciones a los DataFrames."""
     if not dfs:

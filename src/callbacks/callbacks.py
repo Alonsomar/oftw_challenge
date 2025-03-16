@@ -2,11 +2,17 @@
 Define los callbacks para actualizar los gráficos dinámicamente según los filtros seleccionados.
 """
 
+import plotly.graph_objects as go
 from dash.dependencies import Input, Output
 from src.data_ingestion.data_loader import load_clean_data
 from src.utils.filtering import filter_dataframe
-from src.metrics_calculations.money_metrics import calculate_money_moved, calculate_counterfactual_money_moved, calculate_money_moved_by_donation_type, calculate_money_moved_by_platform,calculate_active_arr, calculate_pledge_attrition_rate, calculate_money_moved_by_source
+from src.metrics_calculations.money_metrics import calculate_money_moved, calculate_counterfactual_money_moved, calculate_money_moved_by_donation_type, calculate_money_moved_by_platform, calculate_pledge_attrition_rate, calculate_money_moved_by_source
 from src.metrics_vizualizations.money_viz import plot_money_moved, plot_counterfactual_money_moved, plot_money_moved_by_platform, plot_money_moved_by_donation_type, plot_money_moved_treemap
+from src.metrics_calculations.objectics_metrics import calculate_chapter_arr, calculate_total_active_donors, calculate_total_active_pledges, calculate_pledge_attrition_rate
+from src.metrics_vizualizations.objectics_viz import plot_chapter_arr
+from src.metrics_calculations.performance_metrics import calculate_all_pledges, calculate_all_arr, calculate_future_pledges, calculate_breakdown_by_channel, calculate_monthly_attrition_rate
+from src.metrics_vizualizations.performance_viz import plot_breakdown_by_channel
+
 
 def register_callbacks(app):
     """
@@ -64,7 +70,7 @@ def register_callbacks(app):
     @app.callback(
         [Output("money-moved-platform-graph", "figure"),
          Output("money-moved-donation-type-graph", "figure"),
-         Output("money-moved-source-graph", "figure")],  # Se mantiene ID pero cambia visualización
+         Output("money-moved-source-graph", "figure")],
         [Input("year-filter", "value"),
          Input("portfolio-filter", "value")]
     )
@@ -88,11 +94,59 @@ def register_callbacks(app):
 
         filtered_df = filter_dataframe(payments_df, filters)
 
-        fig_platform = plot_money_moved_by_platform(calculate_money_moved_by_platform(filtered_df))
+        df_platform = calculate_money_moved_by_platform(filtered_df)
+
+        if df_platform.empty:
+            fig_platform = go.Figure()
+        else:
+            fig_platform = plot_money_moved_by_platform(df_platform)
+
         fig_donation_type = plot_money_moved_by_donation_type(
             calculate_money_moved_by_donation_type(filtered_df, pledges_df))
 
-        # Elegir entre Treemap o Pareto
         fig_source = plot_money_moved_treemap(calculate_money_moved_by_source(filtered_df, pledges_df))
 
         return fig_platform, fig_donation_type, fig_source
+
+    @app.callback(
+        [Output("total-active-donors", "children"),
+         Output("total-active-pledges", "children"),
+         Output("pledge-attrition-rate", "children"),
+         Output("chapter-arr-graph", "figure")],
+        [Input("year-filter", "value")]
+    )
+    def update_objectives_metrics(selected_years):
+        pledges_df = load_clean_data().get("pledges", None)
+        if pledges_df is None or pledges_df.empty:
+            return "N/A", "N/A", "N/A", go.Figure()
+
+        chapter_arr_df = calculate_chapter_arr(pledges_df)
+
+        if chapter_arr_df.empty:
+            fig_chapter_arr = go.Figure()
+        else:
+            fig_chapter_arr = plot_chapter_arr(chapter_arr_df)
+
+        return (calculate_total_active_donors(pledges_df),
+                calculate_total_active_pledges(pledges_df),
+                f"{calculate_pledge_attrition_rate(pledges_df) * 100:.2f}%",
+                fig_chapter_arr)
+
+    @app.callback(
+        [Output("total-pledges", "children"),
+         Output("future-pledges", "children"),
+         Output("all-arr", "children"),
+         Output("monthly-attrition-rate", "children"),
+         Output("breakdown-channel-graph", "figure")],
+        [Input("year-filter", "value")]
+    )
+    def update_performance_metrics(selected_years):
+        pledges_df = load_clean_data().get("pledges", None)
+        if pledges_df is None or pledges_df.empty:
+            return "N/A", "N/A", "N/A", "N/A", go.Figure()
+
+        return (calculate_all_pledges(pledges_df),
+                calculate_future_pledges(pledges_df),
+                f"${calculate_all_arr(pledges_df):,.2f}",
+                f"{calculate_monthly_attrition_rate(pledges_df) * 100:.2f}%",
+                plot_breakdown_by_channel(calculate_breakdown_by_channel(pledges_df)))

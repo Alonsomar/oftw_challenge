@@ -81,23 +81,26 @@ from src.metrics_calculations.money_metrics import (
     calculate_money_moved_by_donation_type
 )
 
-
-def plot_money_moved_by_platform(df: pd.DataFrame) -> go.Figure:
+def plot_money_moved_by_platform(df):
     """
     Genera un gráfico de barras para Money Moved por plataforma de pago.
 
     :param df: DataFrame con Money Moved por plataforma.
     :return: Figura de Plotly.
     """
-    if df.empty:
-        logger.warning("El DataFrame de Money Moved por plataforma está vacío. No se generará gráfico.")
+    if df.empty or "payment_platform" not in df.columns or "amount_usd" not in df.columns:
+        logger.warning("El DataFrame para Money Moved por plataforma está vacío o faltan columnas necesarias.")
         return go.Figure()
+
+    # Rellenar valores NaN y convertir a float
+    df["amount_usd"] = pd.to_numeric(df["amount_usd"], errors="coerce").fillna(0)
 
     fig = px.bar(df, x="payment_platform", y="amount_usd", title="Money Moved by Payment Platform",
                  labels={"payment_platform": "Payment Platform", "amount_usd": "Money Moved (USD)"},
-                 text_auto=True)
+                 text_auto=True, color="amount_usd", color_continuous_scale="blues")
 
     fig.update_layout(template="plotly_white")
+
     return fig
 
 def plot_money_moved_by_donation_type(df: pd.DataFrame) -> go.Figure:

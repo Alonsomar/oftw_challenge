@@ -74,20 +74,20 @@ def calculate_counterfactual_money_moved(df: pd.DataFrame) -> pd.DataFrame:
 
 def calculate_money_moved_by_platform(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Calcula el Money Moved total, agrupado por plataforma de pago.
+    Calcula Money Moved total, agrupado por plataforma de pago.
 
     :param df: DataFrame de pagos.
     :return: DataFrame con Money Moved por plataforma.
     """
-    if df.empty:
-        logger.warning("El DataFrame de pagos está vacío. No se calculará Money Moved por plataforma.")
-        return pd.DataFrame()
+    if df.empty or "payment_platform" not in df.columns or "amount_usd" not in df.columns:
+        logger.warning("El DataFrame de pagos está vacío o faltan columnas necesarias.")
+        return pd.DataFrame(columns=["payment_platform", "amount_usd"])
 
     df_filtered = df[~df["portfolio"].isin(EXCLUDED_PORTFOLIOS)].copy()
 
     platform_money_moved = df_filtered.groupby("payment_platform")["amount_usd"].sum().reset_index()
-    logger.info("Calculado Money Moved por plataforma.")
 
+    logger.info("Calculado Money Moved por plataforma.")
     return platform_money_moved
 
 def calculate_money_moved_by_donation_type(payments_df: pd.DataFrame, pledges_df: pd.DataFrame) -> pd.DataFrame:
@@ -182,34 +182,6 @@ def calculate_pledge_attrition_rate(df: pd.DataFrame) -> float:
     return attrition_rate
 
 
-if __name__ == "__main__":
-    from src.data_ingestion.data_read import read_data
-    from src.data_ingestion.data_transform import clean_data
-
-    # Cargar y transformar datos
-    dfs = read_data()
-    transformed_dfs = clean_data(dfs)
-
-    # Obtener pagos
-    payments_df = transformed_dfs.get("payments", pd.DataFrame())
-
-    # Calcular métricas
-    monthly_money_moved, total_money_moved = calculate_money_moved(payments_df)
-    monthly_counterfactual_money_moved, total_counterfactual_money_moved = calculate_counterfactual_money_moved(
-        payments_df)
-
-    # Imprimir resultados
-    print("\n--- Money Moved (Mensual) ---")
-    print(monthly_money_moved.head())
-
-    print(f"\nTotal Money Moved: ${total_money_moved:,.2f}")
-
-    print("\n--- Money Moved Contrafactual (Mensual) ---")
-    print(monthly_counterfactual_money_moved.head())
-
-    print(f"\nTotal Counterfactual Money Moved: ${total_counterfactual_money_moved:,.2f}")
-
-
 def calculate_money_moved_by_source(payments_df: pd.DataFrame, pledges_df: pd.DataFrame) -> pd.DataFrame:
     """
     Calcula Money Moved por fuente (capítulo de donante y tipo de capítulo).
@@ -248,3 +220,32 @@ def calculate_money_moved_by_source(payments_df: pd.DataFrame, pledges_df: pd.Da
     logger.info("Calculado Money Moved por fuente.")
 
     return money_moved_by_source
+
+
+
+if __name__ == "__main__":
+    from src.data_ingestion.data_read import read_data
+    from src.data_ingestion.data_transform import clean_data
+
+    # Cargar y transformar datos
+    dfs = read_data()
+    transformed_dfs = clean_data(dfs)
+
+    # Obtener pagos
+    payments_df = transformed_dfs.get("payments", pd.DataFrame())
+
+    # Calcular métricas
+    monthly_money_moved, total_money_moved = calculate_money_moved(payments_df)
+    monthly_counterfactual_money_moved, total_counterfactual_money_moved = calculate_counterfactual_money_moved(
+        payments_df)
+
+    # Imprimir resultados
+    print("\n--- Money Moved (Mensual) ---")
+    print(monthly_money_moved.head())
+
+    print(f"\nTotal Money Moved: ${total_money_moved:,.2f}")
+
+    print("\n--- Money Moved Contrafactual (Mensual) ---")
+    print(monthly_counterfactual_money_moved.head())
+
+    print(f"\nTotal Counterfactual Money Moved: ${total_counterfactual_money_moved:,.2f}")
