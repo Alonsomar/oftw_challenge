@@ -39,35 +39,6 @@ def calculate_future_pledges(df: pd.DataFrame) -> int:
 
     return future_pledges
 
-def calculate_all_arr(df: pd.DataFrame) -> float:
-    """
-    Calcula el ALL ARR (Future ARR + Active ARR).
-
-    :param df: DataFrame de pledges.
-    :return: ALL ARR total en USD.
-    """
-    if df.empty:
-        logger.warning("El DataFrame de pledges está vacío. No se calculará ALL ARR.")
-        return 0.0
-
-    df.fillna({"frequency": "Unknown"}, inplace=True)
-
-    def annualize_amount(row):
-        if row["frequency"] == "Monthly":
-            return row["contribution_amount"] * 12
-        elif row["frequency"] == "Quarterly":
-            return row["contribution_amount"] * 4
-        elif row["frequency"] == "Annually":
-            return row["contribution_amount"]
-        else:
-            return 0
-
-    df["annualized_amount"] = df.apply(annualize_amount, axis=1)
-
-    total_arr = df["annualized_amount"].sum()
-    logger.info(f"ALL ARR calculado: ${total_arr:,.2f}")
-
-    return total_arr
 
 def calculate_monthly_attrition_rate(df: pd.DataFrame) -> float:
     """

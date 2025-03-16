@@ -190,3 +190,4 @@ data/one-for-the-world-payments.json
 data/one-for-the-world-pledges.json
 *.json
 
+cache-dir/

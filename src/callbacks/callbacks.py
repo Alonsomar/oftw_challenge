@@ -6,12 +6,13 @@ import plotly.graph_objects as go
 from dash.dependencies import Input, Output
 from src.data_ingestion.data_loader import load_clean_data
 from src.utils.filtering import filter_dataframe
-from src.metrics_calculations.money_metrics import calculate_money_moved, calculate_counterfactual_money_moved, calculate_money_moved_by_donation_type, calculate_money_moved_by_platform, calculate_pledge_attrition_rate, calculate_money_moved_by_source
+from src.metrics_calculations.money_metrics import calculate_money_moved, calculate_counterfactual_money_moved, calculate_money_moved_by_donation_type, calculate_money_moved_by_platform, calculate_money_moved_by_source
 from src.metrics_vizualizations.money_viz import plot_money_moved, plot_counterfactual_money_moved, plot_money_moved_by_platform, plot_money_moved_by_donation_type, plot_money_moved_treemap
-from src.metrics_calculations.objectics_metrics import calculate_chapter_arr, calculate_total_active_donors, calculate_total_active_pledges, calculate_pledge_attrition_rate
+from src.metrics_calculations.objectics_metrics import calculate_chapter_arr, calculate_total_active_donors
 from src.metrics_vizualizations.objectics_viz import plot_chapter_arr
-from src.metrics_calculations.performance_metrics import calculate_all_pledges, calculate_all_arr, calculate_future_pledges, calculate_breakdown_by_channel, calculate_monthly_attrition_rate
+from src.metrics_calculations.performance_metrics import calculate_all_pledges, calculate_future_pledges, calculate_breakdown_by_channel, calculate_monthly_attrition_rate
 from src.metrics_vizualizations.performance_viz import plot_breakdown_by_channel
+from src.utils.financial import calculate_pledge_attrition_rate, calculate_arr
 
 
 def register_callbacks(app):
@@ -128,7 +129,7 @@ def register_callbacks(app):
             fig_chapter_arr = plot_chapter_arr(chapter_arr_df)
 
         return (calculate_total_active_donors(pledges_df),
-                calculate_total_active_pledges(pledges_df),
+                pledges_df[pledges_df["pledge_status"] == "Active donor"].shape[0],
                 f"{calculate_pledge_attrition_rate(pledges_df) * 100:.2f}%",
                 fig_chapter_arr)
 
@@ -147,6 +148,6 @@ def register_callbacks(app):
 
         return (calculate_all_pledges(pledges_df),
                 calculate_future_pledges(pledges_df),
-                f"${calculate_all_arr(pledges_df):,.2f}",
+                f"${calculate_arr(pledges_df, ["Pledged donor", "Active donor"]):,.2f}",
                 f"{calculate_monthly_attrition_rate(pledges_df) * 100:.2f}%",
                 plot_breakdown_by_channel(calculate_breakdown_by_channel(pledges_df)))

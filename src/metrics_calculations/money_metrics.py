@@ -3,6 +3,7 @@ Calcula las métricas de 'Money Moved' basadas en el dataset de pagos.
 """
 
 import pandas as pd
+from src.utils.financial import classify_donation_type
 from log_config import get_logger
 
 logger = get_logger(__name__)
@@ -118,68 +119,14 @@ def calculate_money_moved_by_donation_type(payments_df: pd.DataFrame, pledges_df
     df_filtered.fillna({"frequency": "Unknown"}, inplace=True)
 
     # Determinar si es Recurring o One-Time
-    df_filtered["donation_type"] = df_filtered["frequency"].apply(
-        lambda x: "Recurring" if x in ["Monthly", "Annually", "Quarterly"] else "One-Time"
-    )
+    df_filtered["donation_type"] = df_filtered["frequency"].apply(classify_donation_type)
+
 
     # Agrupar Money Moved por tipo de donación
     donation_type_money_moved = df_filtered.groupby("donation_type")["amount_usd"].sum().reset_index()
     logger.info("Calculado Money Moved por tipo de donación.")
 
     return donation_type_money_moved
-
-def calculate_active_arr(df: pd.DataFrame) -> float:
-    """
-    Calcula el Annualized Run Rate (ARR) de donaciones activas.
-
-    :param df: DataFrame de pledges.
-    :return: Active ARR total en USD.
-    """
-    if df.empty:
-        logger.warning("El DataFrame de pledges está vacío. No se calculará Active ARR.")
-        return 0.0
-
-    active_pledges = df[df["pledge_status"] == "Active donor"].copy()
-
-    # Manejar valores nulos en 'frequency'
-    active_pledges["frequency"].fillna("Unknown", inplace=True)
-
-    # Convertir montos a ARR dependiendo de la frecuencia de pago
-    def annualize_amount(row):
-        if row["frequency"] == "Monthly":
-            return row["contribution_amount"] * 12
-        elif row["frequency"] == "Quarterly":
-            return row["contribution_amount"] * 4
-        elif row["frequency"] == "Annually":
-            return row["contribution_amount"]
-        else:
-            return 0  # Omitir pagos no especificados
-
-    active_pledges["annualized_amount"] = active_pledges.apply(annualize_amount, axis=1)
-
-    total_arr = active_pledges["annualized_amount"].sum()
-    logger.info(f"Active ARR calculado: ${total_arr:,.2f}")
-
-    return total_arr
-
-def calculate_pledge_attrition_rate(df: pd.DataFrame) -> float:
-    """
-    Calcula el Pledge Attrition Rate basado en pledges cancelados.
-
-    :param df: DataFrame de pledges.
-    :return: Proporción de pledges que han sido cancelados.
-    """
-    if df.empty:
-        logger.warning("El DataFrame de pledges está vacío. No se calculará Pledge Attrition Rate.")
-        return 0.0
-
-    total_pledges = df.shape[0]
-    churned_pledges = df[df["pledge_status"].isin(["Payment failure", "Churned donor"])].shape[0]
-
-    attrition_rate = churned_pledges / total_pledges if total_pledges > 0 else 0.0
-    logger.info(f"Pledge Attrition Rate calculado: {attrition_rate:.2%}")
-
-    return attrition_rate
 
 
 def calculate_money_moved_by_source(payments_df: pd.DataFrame, pledges_df: pd.DataFrame) -> pd.DataFrame:
