@@ -39,7 +39,10 @@ def register_callbacks(app):
         payments_df = dfs.get("payments", None)
 
         if payments_df is None or payments_df.empty:
-            return {}, {}, [], []
+            empty_fig = go.Figure()
+            empty_fig.add_annotation(text="No Data Available", showarrow=False, x=0.5, y=0.5, xref="paper",
+                                     yref="paper")
+            return empty_fig, empty_fig, [], []
 
         # Convertir fecha a formato adecuado para filtrado
         payments_df["year"] = payments_df["date"].dt.year.astype(str)

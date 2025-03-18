@@ -6,7 +6,7 @@ import pandas as pd
 
 def filter_dataframe(df: pd.DataFrame, filters: dict) -> pd.DataFrame:
     """
-    Filtra un DataFrame basado en un conjunto de filtros.
+    Filtra un DataFrame basado en un conjunto de filtros optimizados usando query().
 
     :param df: DataFrame a filtrar.
     :param filters: Diccionario de filtros con formato {"columna": valor}.
@@ -15,11 +15,14 @@ def filter_dataframe(df: pd.DataFrame, filters: dict) -> pd.DataFrame:
     if df.empty:
         return df
 
+    conditions = []
     for col, value in filters.items():
         if col in df.columns:
-            if isinstance(value, list) and value:  # Filtrar listas no vacías
-                df = df[df[col].isin(value)]
-            elif value:  # Filtrar valores individuales
-                df = df[df[col] == value]
+            if isinstance(value, list) and value:
+                conditions.append(f"{col} in {value}")
+            elif value is not None:
+                conditions.append(f"{col} == '{value}'")
 
-    return df
+    query_str = " & ".join(conditions)
+    return df.query(query_str) if query_str else df
+

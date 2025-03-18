@@ -5,6 +5,7 @@ from src.data_ingestion.data_read import read_data
 from currency_converter import CurrencyConverter
 from log_config import get_logger
 from src.utils.cache import cache
+from src.utils.filtering import filter_dataframe
 
 logger = get_logger(__name__)
 
@@ -66,43 +67,6 @@ def clean_data(dfs: dict) -> dict:
     return dfs
 
 
-def filter_data(df: pd.DataFrame, filters: dict) -> pd.DataFrame:
-    """
-    Filtra el DataFrame según las condiciones proporcionadas en `filters`.
-    Usa `query()` para optimizar el rendimiento cuando sea posible.
-
-    :param df: DataFrame a filtrar
-    :param filters: Diccionario con los filtros, ej: {"currency": "USD", "amount_usd__gt": 50}
-    :return: DataFrame filtrado
-    """
-    if df.empty:
-        logger.warning("El DataFrame está vacío, no se aplicarán filtros.")
-        return df
-
-    conditions = []
-
-    for col, value in filters.items():
-        if "__" in col:
-            col_name, op = col.split("__")
-            if col_name in df.columns:
-                if op == "gt":
-                    conditions.append(f"`{col_name}` > {value}")
-                elif op == "lt":
-                    conditions.append(f"`{col_name}` < {value}")
-                elif op == "eq":
-                    conditions.append(f"`{col_name}` == '{value}'")
-        else:
-            if col in df.columns:
-                conditions.append(f"`{col}` == '{value}'")
-
-    query_str = " & ".join(conditions)
-    if query_str:
-        df = df.query(query_str)
-        logger.info(f"Aplicado filtro: {query_str}")
-
-    return df
-
-
 if __name__ == "__main__":
     # Cargar y transformar datos
     dfs = read_data()
@@ -113,7 +77,7 @@ if __name__ == "__main__":
         "currency": "USD",
         "amount_usd__gt": 100
     }
-    filtered_df = filter_data(transformed_dfs["payments"], sample_filters)
+    filtered_df = filter_dataframe(transformed_dfs["payments"], sample_filters)
 
-    print(filtered_df.loc[:, ['amount', 'currency', 'date']].head(30))  # Ver primeros resultados filtrados
-    print(filtered_df.loc[:, ['amount', 'currency', 'date']].info())
+    print(filtered_df.head())  # Ver primeros resultados filtrados
+    print(filtered_df.info())

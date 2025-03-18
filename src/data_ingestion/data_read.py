@@ -2,8 +2,10 @@ import pandas as pd
 import json
 from pathlib import Path
 from log_config import get_logger
+from src.utils.cache import cache
 
 logger = get_logger(__name__)
+
 
 
 def load_json_to_dataframe(file_path: Path) -> pd.DataFrame:
@@ -18,7 +20,7 @@ def load_json_to_dataframe(file_path: Path) -> pd.DataFrame:
         logger.error(f"Error al cargar {file_path.name}: {e}")
         return pd.DataFrame()
 
-
+@cache.memoize(timeout=300)
 def read_data() -> dict:
     """Lee los archivos JSON y devuelve un diccionario con los DataFrames."""
     data_dir = Path(__file__).parent.parent.parent / 'data'

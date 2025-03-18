@@ -53,21 +53,28 @@ def calculate_active_arr(df: pd.DataFrame) -> float:
 
 def calculate_pledge_attrition_rate(df: pd.DataFrame) -> float:
     """
-    Calcula el Pledge Attrition Rate basado en pledges cancelados.
-
-    :param df: DataFrame de pledges.
-    :return: Proporción de pledges que han sido cancelados.
+    Cálculo global de churn:
+     - Excluye one-time donors si se desea.
+     - Toma todos los pledges con estados de recurrente (Active, Pledged, Payment failure, Churned).
+     - El ratio es (# que están en Payment failure o Churned) / (total pledges recurrentes).
     """
     if df.empty:
-        logger.warning("El DataFrame de pledges está vacío. No se calculará Pledge Attrition Rate.")
         return 0.0
 
-    total_pledges = df.shape[0]
-    churned_pledges = df[df["pledge_status"].isin(["Payment failure", "Churned donor"])].shape[0]
+    # OPCIONAL: excluir one-time donors
+    df = df[df["pledge_status"] != "One-time donor"].copy()
 
-    attrition_rate = churned_pledges / total_pledges if total_pledges > 0 else 0.0
-    logger.info(f"Pledge Attrition Rate calculado: {attrition_rate:.2%}")
+    relevant_statuses = ["Active donor", "Pledged donor","Payment failure","Churned donor"]
+    df_relevant = df[df["pledge_status"].isin(relevant_statuses)].copy()
 
+    total_pledges = df_relevant["pledge_id"].nunique()
+    churned_pledges = df_relevant[df_relevant["pledge_status"].isin(["Payment failure","Churned donor"])]["pledge_id"].nunique()
+
+    if total_pledges == 0:
+        return 0.0
+
+    attrition_rate = churned_pledges / total_pledges
+    logger.info(f"Global Pledge Attrition Rate = {attrition_rate:.2%}")
     return attrition_rate
 
 
@@ -80,15 +87,18 @@ def calculate_arr(df: pd.DataFrame, status_filter: list = None) -> float:
     :return: ARR total en USD.
     """
     if df.empty:
-        logger.warning("El DataFrame de pledges está vacío. No se calculará ARR.")
         return 0.0
 
     if status_filter:
         df = df[df["pledge_status"].isin(status_filter)]
 
-    df = df.fillna({"frequency": "Unknown"})
+    # Verificar valores desconocidos en `frequency`
+    valid_frequencies = {"Monthly", "Quarterly", "Annually"}
+    unexpected_frequencies = set(df["frequency"].dropna().unique()) - valid_frequencies
 
-    # Mapeo para evitar `apply()`
+    if unexpected_frequencies:
+        logger.warning(f"Valores inesperados en frequency: {unexpected_frequencies}")
+
     frequency_map = {
         "Monthly": 12,
         "Quarterly": 4,
@@ -97,10 +107,7 @@ def calculate_arr(df: pd.DataFrame, status_filter: list = None) -> float:
 
     df["annualized_amount"] = df["frequency"].map(frequency_map).fillna(0) * df["contribution_amount"]
 
-    total_arr = df["annualized_amount"].sum()
-
-    logger.info(f"ARR calculado: ${total_arr:,.2f}")
-    return total_arr
+    return df["annualized_amount"].sum()
 
 
 
