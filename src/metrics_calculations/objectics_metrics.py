@@ -34,7 +34,10 @@ def calculate_chapter_arr(df: pd.DataFrame) -> pd.DataFrame:
         logger.warning("El DataFrame de pledges está vacío o faltan columnas necesarias.")
         return pd.DataFrame(columns=["chapter_type", "ARR_USD"])
 
-    chapter_arr = df.groupby("chapter_type").apply(lambda x: calculate_arr(x, ["Active donor"])).reset_index()
+    chapter_arr = df.groupby("chapter_type").apply(
+        lambda x: calculate_arr(x, ["Active donor", "Pledged donor"])
+    ).reset_index()
+
     chapter_arr.rename(columns={0: "ARR_USD"}, inplace=True)
 
     logger.info("Chapter ARR calculado correctamente.")

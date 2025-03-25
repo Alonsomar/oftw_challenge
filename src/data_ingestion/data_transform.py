@@ -6,6 +6,7 @@ from currency_converter import CurrencyConverter
 from log_config import get_logger
 from src.utils.cache import cache
 from src.utils.filtering import filter_dataframe
+from datetime import date
 
 logger = get_logger(__name__)
 
@@ -14,7 +15,8 @@ data_dir = Path(__file__).parent.parent.parent / 'data'
 exchange_rate_path = os.path.join(data_dir, 'eurofxref-hist.csv')
 currency_converter = CurrencyConverter(exchange_rate_path,
                                        fallback_on_missing_rate=True,
-                                       fallback_on_missing_rate_method='last_known')
+                                       fallback_on_missing_rate_method='last_known',
+                                       fallback_on_wrong_date=True)
 
 def normalize_dates(df: pd.DataFrame, date_columns: list) -> pd.DataFrame:
     """Convierte columnas de fecha al formato datetime."""
@@ -25,21 +27,21 @@ def normalize_dates(df: pd.DataFrame, date_columns: list) -> pd.DataFrame:
     return df
 
 
-def convert_currency(df: pd.DataFrame, amount_col: str, currency_col: str, date_col: str) -> pd.DataFrame:
+def convert_currency(df: pd.DataFrame, amount_col: str, currency_col: str, date_col: str, generated_col_name: str) -> pd.DataFrame:
     """Convierte montos a USD usando el CurrencyConverterUtil."""
     if amount_col in df.columns and currency_col in df.columns:
         try:
-            df["amount_usd"] = df.apply(
+            df[generated_col_name] = df.apply(
                 lambda row: currency_converter.convert(row[amount_col],
                                                        row[currency_col],
                                                        "USD",
-                                                       date=row[date_col]) if pd.notna(row[amount_col]) and pd.notna(row[currency_col]) else None,
+                                                       date=row[date_col]) if pd.notna(row[amount_col]) and pd.notna(row[currency_col]) and (date(1999,1,4) <= row[date_col].date()) else None,
                 axis=1
             )
-            logger.info(f"Montos convertidos a USD en columna 'amount_usd'.")
+            logger.info(f"Montos convertidos a USD en columna {generated_col_name}.")
         except Exception as e:
-            logger.error(f'Problema transformando los datos a USD: {e}')
-            logger.info(f'Los límites de fechas de conversión son: {currency_converter.bounds['USD']}')
+            logger.error(f'Problema transformando {amount_col}  a USD: {e}')
+            logger.info(f"Los límites de fechas de conversión son: {currency_converter.bounds['USD']}")
     return df
 
 
@@ -59,7 +61,8 @@ def clean_data(dfs: dict) -> dict:
     # Procesar cada DataFrame
     for name, df in dfs.items():
         df = normalize_dates(df, date_columns.get(name, []))
-        df = convert_currency(df, "amount", "currency", "date")
+        df = convert_currency(df, "amount", "currency", "date", "amount_usd")
+        df = convert_currency(df, "contribution_amount", "currency", "pledge_starts_at", "contribution_amount_usd")
         # df.fillna({"pledge_ended_at": "9999-12-31"}, inplace=True)  # Tratar valores vacíos
         dfs[name] = df
         logger.info(f"Datos limpiados y transformados para {name}.")

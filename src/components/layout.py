@@ -29,6 +29,19 @@ def create_layout():
                 html.Label("Select Portfolio"),
                 dcc.Dropdown(id="portfolio-filter", multi=True, placeholder="Select portfolio(s)")
             ], width=3),
+
+            dbc.Col([
+                html.Label("Year Mode"),
+                dcc.Dropdown(
+                    id="year-mode",
+                    options=[
+                        {"label": "Fiscal Year (Jul-Jun)", "value": "fiscal"},
+                        {"label": "Calendar Year (Jan-Dec)", "value": "calendar"}
+                    ],
+                    value="fiscal",  # Valor por defecto
+                    clearable=False
+                )
+            ], width=3),
         ], style={"marginBottom": "20px"}),
 
         # Gráficos
@@ -98,22 +111,32 @@ def create_layout():
             dbc.Col([
                 html.H3("Total Pledges"),
                 html.H2(id="total-pledges", children="Loading..."),
-            ], width=3),
+            ], width=2),
 
             dbc.Col([
                 html.H3("Future Pledges"),
                 html.H2(id="future-pledges", children="Loading..."),
-            ], width=3),
+            ], width=2),
 
             dbc.Col([
                 html.H3("ALL ARR"),
                 html.H2(id="all-arr", children="Loading..."),
-            ], width=3),
+            ], width=2),
+
+            dbc.Col([
+                html.H3("Future ARR"),
+                html.H2(id="future-arr", children="Loading..."),  # Nuevo ID
+            ], width=2),
+
+            dbc.Col([
+                html.H3("Active ARR"),
+                html.H2(id="active-arr", children="Loading..."),  # Nuevo ID
+            ], width=2),
 
             dbc.Col([
                 html.H3("Monthly Attrition Rate"),
                 html.H2(id="monthly-attrition-rate", children="Loading..."),
-            ], width=3),
+            ], width=2),
         ], style={"marginBottom": "40px"}),
 
         dbc.Row([

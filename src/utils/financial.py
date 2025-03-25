@@ -42,7 +42,7 @@ def calculate_active_arr(df: pd.DataFrame) -> float:
     active_pledges.fillna({"frequency": "Unknown"}, inplace=True)
 
     active_pledges["annualized_amount"] = active_pledges.apply(
-        lambda row: annualize_amount(row["frequency"], row["contribution_amount"]), axis=1
+        lambda row: annualize_amount(row["frequency"], row["contribution_amount_usd"]), axis=1
     )
 
     total_arr = active_pledges["annualized_amount"].sum()
@@ -93,19 +93,20 @@ def calculate_arr(df: pd.DataFrame, status_filter: list = None) -> float:
         df = df[df["pledge_status"].isin(status_filter)]
 
     # Verificar valores desconocidos en `frequency`
-    valid_frequencies = {"Monthly", "Quarterly", "Annually"}
+    valid_frequencies = {"Semi-Monthly", "Monthly", "Quarterly", "Annually"}
     unexpected_frequencies = set(df["frequency"].dropna().unique()) - valid_frequencies
 
     if unexpected_frequencies:
         logger.warning(f"Valores inesperados en frequency: {unexpected_frequencies}")
 
     frequency_map = {
+        "Semi-Monthly": 24,
         "Monthly": 12,
         "Quarterly": 4,
         "Annually": 1
     }
 
-    df["annualized_amount"] = df["frequency"].map(frequency_map).fillna(0) * df["contribution_amount"]
+    df["annualized_amount"] = df["frequency"].map(frequency_map).fillna(0) * df["contribution_amount_usd"]
 
     return df["annualized_amount"].sum()
 

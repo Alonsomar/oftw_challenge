@@ -1,0 +1,88 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
+
+:root {
+    /* Color Palette */
+    --giants-orange: #fb6a37ff;
+    --blue-crayola: #2675f8ff;
+    --chartreuse: #e2ff3fff;
+    --plum-web: #e8ace7ff;
+    --mexican-pink: #dc0073ff;
+
+    /* Background Colors */
+    --background-light: #f9f9f9;
+    --background-dark: #222;
+    --background-card: #ffffff;
+    --background-accent: var(--blue-crayola);
+
+    /* Text Colors */
+    --text-primary: #212121;
+    --text-secondary: #666;
+    --text-light: #ffffff;
+    --text-accent: var(--mexican-pink);
+
+    /* Borders & Shadows */
+    --border-radius: 8px;
+    --border-color: #ccc;
+    --shadow-light: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    --shadow-dark: 0px 4px 12px rgba(0, 0, 0, 0.3);
+
+    /* Spacing */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+
+    /* Fonts */
+    --font-family: 'Montserrat', sans-serif;
+    --font-size-base: 16px;
+    --font-size-sm: 14px;
+    --font-size-lg: 20px;
+}
+
+/* General Styles */
+body {
+    background-color: var(--background-light);
+    color: var(--text-primary);
+    font-family: var(--font-family);
+    font-size: var(--font-size-base);
+}
+
+/* Cards */
+.card {
+    background-color: var(--background-card);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-light);
+    padding: var(--spacing-md);
+}
+
+/* Buttons */
+.button {
+    background-color: var(--giants-orange);
+    color: var(--text-light);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius);
+    border: none;
+    cursor: pointer;
+    transition: background 0.3s ease-in-out;
+}
+
+.button:hover {
+    background-color: var(--blue-crayola);
+}
+
+/* Headings */
+h1, h2, h3 {
+    color: var(--text-accent);
+}
+
+/* Links */
+a {
+    color: var(--blue-crayola);
+    text-decoration: none;
+}
+
+a:hover {
+    color: var(--giants-orange);
+}
