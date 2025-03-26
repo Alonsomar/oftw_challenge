@@ -86,3 +86,16 @@ a {
 a:hover {
     color: var(--giants-orange);
 }
+
+
+/* Si quieres forzar la altura del header */
+.navbar {
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+}
+
+/* Ajustar la imagen del logo si quieres un max-width */
+.navbar-brand img {
+    max-height: 50px;
+}

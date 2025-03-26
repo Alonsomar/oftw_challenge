@@ -1,24 +1,12 @@
-"""
-Define los callbacks para actualizar los gráficos dinámicamente según los filtros seleccionados.
-"""
-
 import plotly.graph_objects as go
 from dash.dependencies import Input, Output
 from src.data_ingestion.data_loader import load_clean_data
 from src.utils.filtering import filter_dataframe, get_date_ranges_from_years
 from src.metrics_calculations.money_metrics import calculate_money_moved, calculate_counterfactual_money_moved, calculate_money_moved_by_donation_type, calculate_money_moved_by_platform, calculate_money_moved_by_source
 from src.metrics_vizualizations.money_viz import plot_money_moved, plot_counterfactual_money_moved, plot_money_moved_by_platform, plot_money_moved_by_donation_type, plot_money_moved_treemap
-from src.metrics_calculations.objectics_metrics import calculate_chapter_arr, calculate_total_active_donors
-from src.metrics_vizualizations.objectics_viz import plot_chapter_arr
-from src.metrics_calculations.performance_metrics import calculate_all_pledges, calculate_future_pledges, calculate_breakdown_by_channel, calculate_monthly_attrition_rate
-from src.metrics_vizualizations.performance_viz import plot_breakdown_by_channel
-from src.utils.financial import calculate_pledge_attrition_rate, calculate_arr
 
-# TODO: Ajustar metricas YTD al año fiscal, como un dropdown adicional. Comentario:
-# Implementar un filtro fiscal (opcional o por defecto). Por ejemplo, un dropdown/selector de “fiscal year” que aplique un rango de fechas [1-Jul a 30-Jun].
-# Acotar “YTD” a la ventana fiscal en la práctica, o al menos documentar que actualmente el usuario tiene que seleccionar manualmente en “year-filter” los años que correspondan al período fiscal.
 
-def register_callbacks(app):
+def register_money_moved_callbacks(app):
     """
     Registra los callbacks en la aplicación Dash.
     """
@@ -127,64 +115,3 @@ def register_callbacks(app):
         fig_source = plot_money_moved_treemap(calculate_money_moved_by_source(filtered_df, pledges_df))
 
         return fig_platform, fig_donation_type, fig_source
-
-    @app.callback(
-        [Output("total-active-donors", "children"),
-         Output("total-active-pledges", "children"),
-         Output("pledge-attrition-rate", "children"),
-         Output("chapter-arr-graph", "figure")],
-        [Input("year-filter", "value")]
-    )
-    def update_objectives_metrics(selected_years):
-        pledges_df = load_clean_data().get("pledges", None)
-        if pledges_df is None or pledges_df.empty:
-            return "N/A", "N/A", "N/A", go.Figure()
-
-        chapter_arr_df = calculate_chapter_arr(pledges_df)
-
-        if chapter_arr_df.empty:
-            fig_chapter_arr = go.Figure()
-        else:
-            fig_chapter_arr = plot_chapter_arr(chapter_arr_df)
-
-        return (calculate_total_active_donors(pledges_df),
-                pledges_df[pledges_df["pledge_status"] == "Active donor"][
-                    "donor_id"
-                ].nunique(),
-                f"{calculate_pledge_attrition_rate(pledges_df) * 100:.2f}%",
-                fig_chapter_arr)
-
-    @app.callback(
-        [Output("total-pledges", "children"),
-         Output("future-pledges", "children"),
-         Output("all-arr", "children"),
-         Output("future-arr", "children"),  # NUEVO
-         Output("active-arr", "children"),  # NUEVO
-         Output("monthly-attrition-rate", "children"),
-         Output("breakdown-channel-graph", "figure")],
-        [Input("year-filter", "value")]
-    )
-    def update_performance_metrics(selected_years):
-        pledges_df = load_clean_data().get("pledges", None)
-        if pledges_df is None or pledges_df.empty:
-            # Ajustamos para devolver 7 elementos:
-            return ("N/A", "N/A", "N/A", "N/A", "N/A", "N/A", go.Figure())
-
-        # Calcular las métricas
-        total_pledges_val = calculate_all_pledges(pledges_df)
-        future_pledges_val = calculate_future_pledges(pledges_df)
-        all_arr_val = calculate_arr(pledges_df, ["Pledged donor", "Active donor"])
-        future_arr_val = calculate_arr(pledges_df, ["Pledged donor"])
-        active_arr_val = calculate_arr(pledges_df, ["Active donor"])
-        monthly_attrition_val = calculate_monthly_attrition_rate(pledges_df)
-        breakdown_fig = plot_breakdown_by_channel(calculate_breakdown_by_channel(pledges_df))
-
-        return (
-            total_pledges_val,
-            future_pledges_val,
-            f"${all_arr_val:,.2f}",
-            f"${future_arr_val:,.2f}",  # Future ARR en formato $
-            f"${active_arr_val:,.2f}",  # Active ARR en formato $
-            f"{monthly_attrition_val * 100:.2f}%",
-            breakdown_fig
-        )
