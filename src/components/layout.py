@@ -14,46 +14,55 @@ def create_layout():
         dcc.Store(id="stored-data", storage_type="memory"),
         dcc.Location(id="url", refresh=False),
 
-        # HEADER SUPERIOR
+        # HEADER SUPERIOR (Fixed)
         create_header(),
 
-        # SIDEBAR
+        # SIDEBAR (Fixed)
         sidebar,
 
-        # Contenedor principal a la derecha
+        # Contenedor principal
         html.Div([
+            # FILTROS GLOBALES
+            html.Div([
+                dbc.Row([
+                    dbc.Col([
+                        html.Label("Select Year", className="filter-label"),
+                        dcc.Dropdown(
+                            id="year-filter",
+                            multi=True,
+                            placeholder="Select year(s)",
+                            className="dash-dropdown"
+                        )
+                    ], width=4),
+                    dbc.Col([
+                        html.Label("Select Portfolio", className="filter-label"),
+                        dcc.Dropdown(
+                            id="portfolio-filter",
+                            multi=True,
+                            placeholder="Select portfolio(s)",
+                            className="dash-dropdown"
+                        )
+                    ], width=4),
+                    dbc.Col([
+                        html.Label("Year Mode", className="filter-label"),
+                        dcc.Dropdown(
+                            id="year-mode",
+                            options=[
+                                {"label": "Fiscal Year (Jul-Jun)", "value": "fiscal"},
+                                {"label": "Calendar Year (Jan-Dec)", "value": "calendar"}
+                            ],
+                            value="fiscal",
+                            clearable=False,
+                            className="dash-dropdown"
+                        )
+                    ], width=4),
+                ], className="g-3")
+            ], className="filter-section fade-in"),
 
-            # FILTROS GLOBALES => "header" de la parte central
-            dbc.Row([
-                dbc.Col([
-                    html.Label("Select Year"),
-                    dcc.Dropdown(id="year-filter", multi=True, placeholder="Select year(s)")
-                ], width=3),
-                dbc.Col([
-                    html.Label("Select Portfolio"),
-                    dcc.Dropdown(id="portfolio-filter", multi=True, placeholder="Select portfolio(s)")
-                ], width=3),
-                dbc.Col([
-                    html.Label("Year Mode"),
-                    dcc.Dropdown(
-                        id="year-mode",
-                        options=[
-                            {"label": "Fiscal Year (Jul-Jun)", "value": "fiscal"},
-                            {"label": "Calendar Year (Jan-Dec)", "value": "calendar"}
-                        ],
-                        value="fiscal",
-                        clearable=False
-                    )
-                ], width=3),
-            ], style={"marginBottom": "20px"}),
-
-            # AQUI: Div vacio donde inyectaremos la “pagina” segun la URL
-            html.Div(id="page-content",
-                     style={"padding": "2rem"}),
-        ],
-            style={
-                "marginLeft": "16rem",  # Deja espacio para el sidebar
-                "padding": "2rem"
-            }
-        ),
+            # Contenido de la página
+            html.Div(
+                id="page-content",
+                className="fade-in"
+            ),
+        ], className="main-content"),
     ])

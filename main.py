@@ -15,6 +15,8 @@ app.config.suppress_callback_exceptions = True
 # 🔥 Inicializar el cache aquí (después de definir app)
 cache.init_app(app.server)
 
+app.title = "OFTW Challenge"
+
 # Configurar el layout dinámico
 app.layout = create_layout
 
