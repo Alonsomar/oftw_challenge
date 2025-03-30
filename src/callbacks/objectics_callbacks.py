@@ -1,6 +1,7 @@
+import json
+import pandas as pd
 import plotly.graph_objects as go
 from dash.dependencies import Input, Output
-from src.data_ingestion.data_loader import load_clean_data
 from src.metrics_calculations.objectics_metrics import calculate_chapter_arr, calculate_total_active_donors
 from src.metrics_vizualizations.objectics_viz import plot_chapter_arr
 from src.utils.financial import calculate_pledge_attrition_rate
@@ -16,12 +17,24 @@ def register_objective_callbacks(app):
          Output("total-active-pledges", "children"),
          Output("pledge-attrition-rate", "children"),
          Output("chapter-arr-graph", "figure")],
-        [Input("year-filter", "value")]
+        [Input("store-filtered-data", "data")]
     )
-    def update_objectives_metrics(selected_years):
-        pledges_df = load_clean_data().get("pledges", None)
-        if pledges_df is None or pledges_df.empty:
-            return "N/A", "N/A", "N/A", go.Figure()
+    def update_objectives_metrics(filtered_data_json):
+
+        if not filtered_data_json:
+            empty_fig = go.Figure()
+            empty_fig.add_annotation(text="No Data Available", showarrow=False, x=0.5, y=0.5, xref="paper",
+                                     yref="paper")
+            return "N/A", "N/A", "N/A", empty_fig
+
+        data_dict = json.loads(filtered_data_json)
+        pledges_df = pd.DataFrame(data_dict["pledges"])
+
+
+        datetime_cols_pledges = ["pledge_created_at", "pledge_starts_at", "pledge_ended_at"]
+        for col in datetime_cols_pledges:
+            if col in pledges_df.columns:
+                pledges_df[col] = pd.to_datetime(pledges_df[col], errors="coerce")
 
         chapter_arr_df = calculate_chapter_arr(pledges_df)
 
