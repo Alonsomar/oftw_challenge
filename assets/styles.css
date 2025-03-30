@@ -336,6 +336,8 @@ a:hover::after {
     margin-bottom: var(--spacing-xl);
     box-shadow: var(--shadow-light);
     border: 1px solid var(--border-color);
+    z-index: 999;
+    position: relative;
 }
 
 .filter-section .row {

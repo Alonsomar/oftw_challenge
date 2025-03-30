@@ -11,6 +11,5 @@ def notes_layout():
                 ], className="dashboard-header")
             ], width=12)
         ], className="mb-5"),
-    ], fluid=True)
-
+    ], fluid=True, className="py-4")
 
