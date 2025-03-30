@@ -22,6 +22,13 @@ NAV_ITEMS = [
         "title": "Pledge Performance",
         "href": "/pledge_perf",
         "description": "Analyze pledge metrics"
+    },
+    {
+        "id": "pledge",
+        "icon": "fas fa-note-sticky",
+        "title": "Methodology & Notes",
+        "href": "/notes",
+        "description": "Details on calculation and assumptions"
     }
 ]
 

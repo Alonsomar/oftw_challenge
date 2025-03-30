@@ -4,6 +4,7 @@ from src.pages.money_moved_layout import money_moved_layout
 from src.pages.objectics_layout import objectics_layout
 from src.pages.pledge_perf_layout import pledge_perf_layout
 from src.pages.home_layout import home_layout
+from src.pages.notes import notes_layout
 
 def register_callbacks(app):
 
@@ -18,6 +19,8 @@ def register_callbacks(app):
             return objectics_layout()
         elif pathname == "/pledge_perf":
             return pledge_perf_layout()
+        elif pathname == "/notes":
+            return notes_layout()
         elif pathname == "/" or pathname == "":  # Cuando es la raíz
             return home_layout()
         else:
