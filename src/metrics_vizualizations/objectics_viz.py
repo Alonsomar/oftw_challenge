@@ -5,6 +5,7 @@ Genera visualizaciones para Objectives and Key Results (OKRs).
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
+from src.metrics_vizualizations.theme import OFTW_COLOR_SCALES
 from log_config import get_logger
 
 logger = get_logger(__name__)
@@ -23,10 +24,16 @@ def plot_chapter_arr(df):
     # Rellenar valores NaN y forzar float en ARR_USD
     df["ARR_USD"] = pd.to_numeric(df["ARR_USD"], errors="coerce").fillna(0)
 
-    fig = px.bar(df, x="chapter_type", y="ARR_USD", title="Chapter ARR",
-                 labels={"chapter_type": "Chapter Type", "ARR_USD": "Annualized Revenue (USD)"},
-                 text_auto=True, color="ARR_USD", color_continuous_scale="blues")
+    fig = px.bar(
+        df,
+        x="chapter_type",
+        y="ARR_USD",
+        labels={"chapter_type": "Chapter Type", "ARR_USD": "Annualized Revenue (USD)"},
+        text_auto=True,
+        color="ARR_USD",
+        color_continuous_scale=OFTW_COLOR_SCALES['sequential'],
+    )
 
-    fig.update_layout(template="plotly_white")
+    fig.update_layout(template="oftw_template")
 
     return fig

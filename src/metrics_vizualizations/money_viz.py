@@ -7,6 +7,7 @@ import plotly.graph_objects as go
 import pandas as pd
 from log_config import get_logger
 from src.metrics_calculations.money_metrics import calculate_money_moved, calculate_counterfactual_money_moved
+from src.metrics_vizualizations.theme import OFTW_COLOR_SCALES
 
 logger = get_logger(__name__)
 
@@ -26,7 +27,6 @@ def plot_money_moved(monthly_money_moved: pd.DataFrame, total_money_moved: float
         monthly_money_moved,
         x="year_month",
         y="amount_usd",
-        title=f"Money Moved Over Time (Total: ${total_money_moved:,.2f})",
         labels={"year_month": "Month", "amount_usd": "Money Moved (USD)"},
         markers=True
     )
@@ -34,7 +34,7 @@ def plot_money_moved(monthly_money_moved: pd.DataFrame, total_money_moved: float
     fig.update_layout(
         xaxis_title="Month",
         yaxis_title="Money Moved (USD)",
-        template="plotly_white"
+        template="oftw_template"
     )
 
     return fig
@@ -55,7 +55,6 @@ def plot_counterfactual_money_moved(monthly_counterfactual_money_moved: pd.DataF
         monthly_counterfactual_money_moved,
         x="year_month",
         y="counterfactual_amount",
-        title=f"Counterfactual Money Moved Over Time (Total: ${total_counterfactual_money_moved:,.2f})",
         labels={"year_month": "Month", "counterfactual_amount": "Counterfactual Money Moved (USD)"},
         text_auto=True
     )
@@ -63,23 +62,11 @@ def plot_counterfactual_money_moved(monthly_counterfactual_money_moved: pd.DataF
     fig.update_layout(
         xaxis_title="Month",
         yaxis_title="Counterfactual Money Moved (USD)",
-        template="plotly_white"
+        template="oftw_template"
     )
 
     return fig
 
-
-"""
-Genera visualizaciones interactivas para nuevas métricas de Money Moved.
-"""
-
-import plotly.express as px
-import plotly.graph_objects as go
-import pandas as pd
-from src.metrics_calculations.money_metrics import (
-    calculate_money_moved_by_platform,
-    calculate_money_moved_by_donation_type
-)
 
 def plot_money_moved_by_platform(df):
     """
@@ -95,13 +82,20 @@ def plot_money_moved_by_platform(df):
     # Rellenar valores NaN y convertir a float
     df["amount_usd"] = pd.to_numeric(df["amount_usd"], errors="coerce").fillna(0)
 
-    fig = px.bar(df, x="payment_platform", y="amount_usd", title="Money Moved by Payment Platform",
-                 labels={"payment_platform": "Payment Platform", "amount_usd": "Money Moved (USD)"},
-                 text_auto=True, color="amount_usd", color_continuous_scale="blues")
+    fig = px.bar(
+        df,
+        x="payment_platform",
+        y="amount_usd",
+        labels={"payment_platform": "Payment Platform", "amount_usd": "Money Moved (USD)"},
+        text_auto=True,
+        color="amount_usd",
+        color_continuous_scale=OFTW_COLOR_SCALES['sequential'],
+    )
 
-    fig.update_layout(template="plotly_white")
+    fig.update_layout(template="oftw_template")
 
     return fig
+
 
 def plot_money_moved_by_donation_type(df: pd.DataFrame) -> go.Figure:
     """
@@ -114,13 +108,17 @@ def plot_money_moved_by_donation_type(df: pd.DataFrame) -> go.Figure:
         logger.warning("El DataFrame de Money Moved por tipo de donación está vacío. No se generará gráfico.")
         return go.Figure()
 
-    fig = px.pie(df, names="donation_type", values="amount_usd", title="Money Moved by Donation Type",
-                 hole=0.4, labels={"donation_type": "Donation Type", "amount_usd": "Money Moved (USD)"})
+    fig = px.pie(
+        df,
+        names="donation_type",
+        values="amount_usd",
+        hole=0.4,
+        labels={"donation_type": "Donation Type", "amount_usd": "Money Moved (USD)"}
+    )
 
-    fig.update_layout(template="plotly_white")
+    fig.update_layout(template="oftw_template")
     return fig
 
-import plotly.express as px
 
 def plot_money_moved_treemap(df: pd.DataFrame) -> go.Figure:
     """
@@ -137,12 +135,11 @@ def plot_money_moved_treemap(df: pd.DataFrame) -> go.Figure:
         df,
         path=["chapter_type", "donor_chapter"],
         values="amount_usd",
-        title="Money Moved by Source (Treemap)",
         color="amount_usd",
-        color_continuous_scale="blues"
+        color_continuous_scale=OFTW_COLOR_SCALES['sequential'],
     )
 
-    fig.update_layout(template="plotly_white")
+    fig.update_layout(template="oftw_template")
 
     return fig
 
