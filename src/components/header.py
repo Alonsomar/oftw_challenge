@@ -5,7 +5,7 @@ def create_header():
     return dbc.Navbar(
         dbc.Container(
             [
-                # Logo + texto como una sola unidad alineada
+                # Logo + text combined as a single clickable unit, linking to home page
                 dbc.NavbarBrand(
                     [
                         html.Img(
@@ -15,10 +15,11 @@ def create_header():
                         ),
                         "App Building Challenge"
                     ],
+                    href="/",  # Redirect to home page
                     className="d-flex align-items-center navbar-brand-text"
                 ),
 
-                # Enlaces
+                # Navigation items
                 dbc.Nav(
                     [
                         dbc.NavItem(
