@@ -1,0 +1,24 @@
+{
+  "objectics_key_results": [
+    {"money_moved":  1800000},
+    {"money_moved_counterfactual": 1260000},
+    {"active_ARR": 1200000},
+    {"pledge_attrition_rate": 0.18},
+    {"total_number_active_donors": 1200},
+    {"total_number_active_pledges": 850},
+    {"chapter_arr": 670000}
+  ],
+  "money_moved": [
+    {"money_moved":  1800000},
+    {"money_moved_counterfactual": 1260000}
+  ],
+  "pledge_performance": [
+    {"all_pledges":  1850},
+    {"future_pledges": 1000},
+    {"active_pledges": 850},
+    {"all_arr": 1800000},
+    {"future_arr": 600000},
+    {"active_arr": 1200000},
+    {"monthly_attrition": 0.18}
+  ]
+}
