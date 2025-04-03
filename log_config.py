@@ -4,7 +4,7 @@ import os
 
 LOG_DIR = "logs"
 if not os.path.exists(LOG_DIR):
-    os.makedirs(LOG_DIR)
+    os.makedirs(LOG_DIR, exist_ok=True)
 
 logger.remove()
 
