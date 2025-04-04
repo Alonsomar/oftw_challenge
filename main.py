@@ -17,6 +17,7 @@ app.config.suppress_callback_exceptions = True
 cache.init_app(app.server)
 
 app.title = "OFTW Challenge"
+server = app.server
 
 # Registrar theme
 register_oftw_template()

@@ -15,4 +15,7 @@ COPY . .
 EXPOSE 8050
 
 # Comando para ejecutar Gunicorn
-CMD ["gunicorn", "-c", "gunicorn_config.py", "main:app.server", "--bind", "0.0.0.0:8050"]
+CMD ["gunicorn",
+     "-c", "gunicorn_config.py",
+     "main:server",
+     "--bind", "0.0.0.0:8050"]
