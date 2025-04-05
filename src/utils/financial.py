@@ -90,7 +90,7 @@ def calculate_arr(df: pd.DataFrame, status_filter: list = None) -> float:
         return 0.0
 
     if status_filter:
-        df = df[df["pledge_status"].isin(status_filter)]
+        df = df[df["pledge_status"].isin(status_filter)].copy()
 
     # Verificar valores desconocidos en `frequency`
     valid_frequencies = {"Semi-Monthly", "Monthly", "Quarterly", "Annually"}

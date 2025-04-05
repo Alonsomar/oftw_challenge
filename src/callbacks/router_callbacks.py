@@ -65,9 +65,7 @@ def register_callbacks(app):
     from src.callbacks.objectics_callbacks import register_objective_callbacks
     from src.callbacks.money_moved_callbacks import register_money_moved_callbacks
     from src.callbacks.pledge_perf_callbacks import register_performance_callbacks
-    from src.callbacks.global_filter_callback import register_global_filter_callbacks
 
-    register_global_filter_callbacks(app)
     register_objective_callbacks(app)
     register_money_moved_callbacks(app)
     register_performance_callbacks(app)

@@ -5,6 +5,7 @@ from dash.dependencies import Input, Output
 from src.metrics_calculations.performance_metrics import calculate_all_pledges, calculate_future_pledges, calculate_breakdown_by_channel, calculate_monthly_attrition_rate
 from src.metrics_vizualizations.performance_viz import plot_breakdown_by_channel
 from src.utils.financial import calculate_arr
+from src.utils.callbacks_filter import get_filtered_data
 
 
 def register_performance_callbacks(app):
@@ -20,24 +21,19 @@ def register_performance_callbacks(app):
          Output("active-arr", "children"),  # NUEVO
          Output("monthly-attrition-rate", "children"),
          Output("breakdown-channel-graph", "figure")],
-        [Input("store-filtered-data", "data")]
+        [Input("year-filter", "value"),
+         Input("portfolio-filter", "value"),
+         Input("year-mode", "value")]
     )
-    def update_performance_metrics(filtered_data_json):
+    def update_performance_metrics(selected_years, selected_portfolios, year_mode):
 
-        if not filtered_data_json:
+        payments_df, pledges_df = get_filtered_data(selected_years, selected_portfolios, year_mode)
+
+        if pledges_df is None or pledges_df.empty:
             empty_fig = go.Figure()
             empty_fig.add_annotation(text="No Data Available", showarrow=False, x=0.5, y=0.5, xref="paper",
                                      yref="paper")
             return "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", empty_fig
-
-        data_dict = json.loads(filtered_data_json)
-        pledges_df = pd.DataFrame(data_dict["pledges"])
-
-        datetime_cols_pledges = ["pledge_created_at", "pledge_starts_at", "pledge_ended_at"]
-        for col in datetime_cols_pledges:
-            if col in pledges_df.columns:
-                pledges_df[col] = pd.to_datetime(pledges_df[col], errors="coerce")
-
 
         # Calcular las métricas
         total_pledges_val = calculate_all_pledges(pledges_df)

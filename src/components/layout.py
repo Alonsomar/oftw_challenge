@@ -11,8 +11,6 @@ from src.components.header import create_header
 
 def create_layout():
     return html.Div([
-        dcc.Store(id="stored-data", storage_type="memory"),
-        dcc.Store(id="store-filtered-data", storage_type="memory"),
         dcc.Location(id="url", refresh=False),
 
         # HEADER SUPERIOR (Fixed)
