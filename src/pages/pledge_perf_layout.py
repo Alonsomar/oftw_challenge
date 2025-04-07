@@ -11,7 +11,7 @@ def pledge_perf_layout():
             dbc.Col([
                 html.Div([
                     html.H1("Pledge Performance", className="display-4 text-center mb-3 fade-in"),
-                    html.P("Track and analyze your pledge metrics in real-time", className="lead text-center mb-5 fade-in")
+                    html.P("Track and analyze pledge metrics in real-time", className="lead text-center mb-5 fade-in")
                 ], className="dashboard-header")
             ], width=12)
         ], className="mb-5"),

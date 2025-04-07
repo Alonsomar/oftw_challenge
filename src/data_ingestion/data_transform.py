@@ -44,6 +44,28 @@ def convert_currency(df: pd.DataFrame, amount_col: str, currency_col: str, date_
             logger.info(f"Los límites de fechas de conversión son: {currency_converter.bounds['USD']}")
     return df
 
+def normalize_na(df, df_name):
+    # --- Unificar notación de NaN, valores vacíos, etc. ---
+    if df_name == "pledges":
+        # Reemplaza cadenas vacías ("") o "n/a" por None, para luego unificarlas
+        df.replace({"donor_chapter": {"": None, "n/a": None},
+                    "chapter_type": {"": None, "n/a": None}}, inplace=True)
+
+        # Ahora sí, lo que sea None pasará a "Unknown"
+        df["donor_chapter"] = df["donor_chapter"].fillna("Unknown")
+        df["chapter_type"] = df["chapter_type"].fillna("Unknown")
+
+    elif df_name == "payments":
+        # Igualmente para 'portfolio' y 'payment_platform', si aplica
+        df.replace({"portfolio": {"": None, "n/a": None},
+                    "payment_platform": {"": None, "n/a": None}}, inplace=True)
+
+        df["portfolio"] = df["portfolio"].fillna("Unknown")
+        df["payment_platform"] = df["payment_platform"].fillna("Unknown")
+
+    logger.info(f"Notación NaN unificada para dataset {df_name}.")
+    return df
+
 
 @cache.memoize(timeout=300)
 def clean_data(dfs: dict) -> dict:
@@ -63,7 +85,7 @@ def clean_data(dfs: dict) -> dict:
         df = normalize_dates(df, date_columns.get(name, []))
         df = convert_currency(df, "amount", "currency", "date", "amount_usd")
         df = convert_currency(df, "contribution_amount", "currency", "pledge_starts_at", "contribution_amount_usd")
-        # df.fillna({"pledge_ended_at": "9999-12-31"}, inplace=True)  # Tratar valores vacíos
+        df = normalize_na(df, name)
         dfs[name] = df
         logger.info(f"Datos limpiados y transformados para {name}.")
 
