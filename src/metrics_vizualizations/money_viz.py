@@ -144,6 +144,66 @@ def plot_money_moved_treemap(df: pd.DataFrame) -> go.Figure:
     return fig
 
 
+def plot_accumulated_money_moved(accumulated_df: pd.DataFrame,
+                                 target_value: float = None,
+                                 year_mode: str = "calendar") -> go.Figure:
+    """
+    Grafica el 'cumulative_usd' para cada contable_year en lines.
+    """
+    if accumulated_df.empty:
+        return go.Figure()
+
+    # Ejemplo: multiples lines, color por contable_year
+    fig = px.line(
+        accumulated_df,
+        x="contable_month",  # o "year_month_label"
+        y="cumulative_usd",
+        color="contable_year",
+        color_discrete_sequence=OFTW_COLOR_SCALES['discrete'],
+        markers=True,
+        labels={
+            "contable_month": "Month in Year",
+            "cumulative_usd": "Cumulative USD",
+            "contable_year": "Year"
+        }
+    )
+
+    # Agregar meta
+    if target_value:
+        fig.add_hline(
+            y=target_value,
+            line_dash="dot",
+            line_color="red",
+            annotation_text=f"Target: ${target_value:,.0f}",
+            annotation_position="top left"
+        )
+
+        # 2) Añadir la línea vertical que marca diciembre,
+        #    según sea calendar o fiscal
+        if year_mode == "calendar":
+            # x=12 => Diciembre
+            fig.add_vline(
+                x=12,
+                line_dash="dash",
+                line_width=1,
+                line_color="green",
+                annotation_text="December",
+                annotation_position="top right"
+            )
+        else:
+            # year_mode == "fiscal"
+            # x=6 => Diciembre en contable_month con offset
+            fig.add_vline(
+                x=6,
+                line_dash="dash",
+                line_color="green",
+                annotation_text="December",
+                annotation_position="top right"
+            )
+
+    fig.update_layout(template="oftw_template")
+    return fig
+
 
 if __name__ == "__main__":
     from src.data_ingestion.data_read import read_data

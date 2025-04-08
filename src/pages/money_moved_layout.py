@@ -29,6 +29,19 @@ def money_moved_layout():
             ], width=12)
         ], className="mb-5"),
 
+        dbc.Row([
+            dbc.Col([
+                html.Div([
+                    html.Div([
+                        html.I(className="fas fa-chart-area fa-2x mb-3"),
+                        html.H3("Accumulated Money Moved", className="mb-4"),
+                        dcc.Graph(id="accumulated-money-moved-graph", figure=go.Figure())
+                    ], className="graph-section")
+                ], className="card graph-card fade-in")
+            ], width=12)
+        ], className="mb-5"),
+
+
         # Counterfactual Money Moved
         dbc.Row([
             dbc.Col([

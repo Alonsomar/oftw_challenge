@@ -7,7 +7,6 @@ from src.utils.cache import cache
 logger = get_logger(__name__)
 
 
-
 def load_json_to_dataframe(file_path: Path) -> pd.DataFrame:
     """Carga un archivo JSON en un DataFrame de pandas."""
     try:
@@ -20,6 +19,7 @@ def load_json_to_dataframe(file_path: Path) -> pd.DataFrame:
         logger.error(f"Error al cargar {file_path.name}: {e}")
         return pd.DataFrame()
 
+
 @cache.memoize(timeout=300)
 def read_data() -> dict:
     """Lee los archivos JSON y devuelve un diccionario con los DataFrames."""
@@ -31,6 +31,18 @@ def read_data() -> dict:
 
     dataframes = {key: load_json_to_dataframe(path) for key, path in files.items()}
     return dataframes
+
+
+@cache.memoize(timeout=300)
+def read_targets():
+    """
+    Carga los objetivos (targets) desde data/targets.json
+    """
+    data_dir = Path(__file__).parent.parent.parent / 'data'
+    target_file = data_dir / 'targets.json'
+    with open(target_file, 'r', encoding='utf-8') as f:
+        targets = json.load(f)
+    return targets
 
 
 if __name__ == "__main__":

@@ -13,6 +13,15 @@ EXCLUDED_PORTFOLIOS = [
     "One for the World Operating Costs"
 ]
 
+CALENDAR_LABELS = {
+    1: "Jan", 2: "Feb", 3: "Mar", 4: "Apr", 5: "May", 6: "Jun",
+    7: "Jul", 8: "Aug", 9: "Sep", 10: "Oct", 11: "Nov", 12: "Dec"
+}
+
+FISCAL_LABELS = {
+    1: "Jul", 2: "Aug", 3: "Sep", 4: "Oct", 5: "Nov", 6: "Dec",
+    7: "Jan", 8: "Feb", 9: "Mar", 10: "Apr", 11: "May", 12: "Jun"
+}
 
 def calculate_money_moved(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -168,6 +177,81 @@ def calculate_money_moved_by_source(payments_df: pd.DataFrame, pledges_df: pd.Da
 
     return money_moved_by_source
 
+
+def calculate_accumulated_money_moved(df: pd.DataFrame, year_mode: str) -> pd.DataFrame:
+    """
+    Calcula el monto movido de forma acumulada POR AÑO
+    (sea fiscal o calendario), retornando un DF para graficar.
+    """
+
+    if df.empty:
+        return pd.DataFrame()
+
+    # Excluir portfolios no deseados
+    df_filtered = df[~df["portfolio"].isin(EXCLUDED_PORTFOLIOS)].copy()
+
+    # Asumiendo que ya has filtrado este DF a un año o varios (en el callback).
+    # Aun así, necesitamos "año contable" y "mes contable".
+    # Dependerá de year_mode: 'calendar' vs 'fiscal'.
+
+    # 1) Crear col. year y col. month reales
+    df_filtered["actual_year"] = df_filtered["date"].dt.year
+    df_filtered["month"] = df_filtered["date"].dt.month
+
+    # 2) Crear "contable_year"
+    if year_mode == "calendar":
+        # contable_year = actual_year
+        df_filtered["contable_year"] = df_filtered["actual_year"]
+    else:
+        # year_mode == "fiscal"
+        # Si month >= 7 => contable_year = actual_year
+        # Si month < 7  => contable_year = actual_year - 1
+        df_filtered["contable_year"] = df_filtered.apply(
+            lambda row: row["actual_year"] if row["month"] >= 7 else row["actual_year"] - 1,
+            axis=1
+        )
+
+    # 3) Agrupar por contable_year, y contable_month para resumir
+    # contable_month = 1..12 en orden: 1=Jul, 2=Aug,... si es fiscal?
+    #   eso se hace con un offset, si deseas.
+    #   O a veces, para graficar, basta con "fecha" ordenada.
+    #
+    # Ejemplo simple: agrupar por (contable_year, date) => monthly sums
+    # luego en plot, mostrar un label year-month.
+    # Si quieres un "mes contable" estilo 1..12, se hace un shift.
+
+    # Generemos un "contable_month" sin shift:
+    if year_mode == "calendar":
+        df_filtered["contable_month"] = df_filtered["month"]
+    else:
+        # fiscal: mes 7 -> contable_month=1, mes 8 -> 2, ... mes 6->12
+        # => contable_month = (month - 7 + 12) % 12 + 1
+        df_filtered["contable_month"] = ((df_filtered["month"] - 7) % 12) + 1
+
+    if year_mode == "calendar":
+        df_filtered["month_label"] = df_filtered["contable_month"].map(CALENDAR_LABELS)
+    else:
+        df_filtered["month_label"] = df_filtered["contable_month"].map(FISCAL_LABELS)
+
+    # Sumar amount_usd por contable_year y contable_month
+    grouped = df_filtered.groupby(["contable_year", "contable_month"], as_index=False)["amount_usd"].sum()
+
+    # Ordenar
+    grouped.sort_values(["contable_year", "contable_month"], inplace=True)
+
+    # Hacer cumsum por contable_year
+    grouped["cumulative_usd"] = grouped.groupby("contable_year")["amount_usd"].cumsum()
+
+    # Opcional: generar una col. label p.ej. "FY24 M1" o "2023-01"
+    # Depende de si quieres un label unificado
+    if year_mode == "calendar":
+        # monthly label e.g. "2023-01"
+        grouped["year_month_label"] = grouped["contable_year"].astype(str) + "-" + grouped["contable_month"].astype(str)
+    else:
+        # e.g. "FY24 M3"
+        grouped["year_month_label"] = "FY" + grouped["contable_year"].astype(str).str[-2:] + " M" + grouped["contable_month"].astype(str)
+
+    return grouped
 
 
 if __name__ == "__main__":
