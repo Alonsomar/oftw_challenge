@@ -202,6 +202,12 @@ body {
     transform: scale(1.1);
 }
 
+.graph-explanation {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
 /* Headings */
 h1, h2, h3 {
     color: var(--text-accent);

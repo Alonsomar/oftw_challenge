@@ -85,6 +85,10 @@ def pledge_perf_layout():
                     html.Div([
                         html.I(className="fas fa-chart-bar fa-2x mb-3"),
                         html.H3("Breakdown of Pledges by Channel", className="mb-4"),
+                        html.P(
+                            "Analyzes how pledges distribute across various chapter types, pinpointing the most effective channels and highlighting where additional outreach may strengthen donor commitment.",
+                            className="graph-explanation"
+                        ),
                         dcc.Graph(
                             id="breakdown-channel-graph",
                             figure=go.Figure(),

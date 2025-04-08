@@ -54,6 +54,10 @@ def objectics_layout():
                     html.Div([
                         html.I(className="fas fa-chart-line fa-2x mb-3"),
                         html.H3("Chapter ARR", className="mb-4"),
+                        html.P(
+                            "Annualized Revenue (ARR) estimates the year-long value from both active and pledged donors, broken down by chapter type. Tracking these amounts helps shape engagement strategies.",
+                            className="graph-explanation"
+                        ),
                         dcc.Graph(id="chapter-arr-graph", figure=go.Figure())
                     ], className="graph-section")
                 ], className="card graph-card fade-in")
