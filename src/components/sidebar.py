@@ -29,6 +29,13 @@ NAV_ITEMS = [
         "title": "Methodology & Notes",
         "href": "/notes",
         "description": "Details on calculation and assumptions"
+    },
+    {
+        "id": "chat-llm",
+        "icon": "fas fa-comments",
+        "title": "LLM Chat",
+        "href": "/chat_llm",
+        "description": "Chat with the data"
     }
 ]
 

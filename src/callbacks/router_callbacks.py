@@ -8,6 +8,8 @@ from src.pages.pledge_perf_layout import pledge_perf_layout
 from src.pages.home_layout import home_layout
 from src.pages.notes import notes_layout
 from src.data_ingestion.data_loader import load_clean_data
+from src.pages.chat_llm_layout import chat_llm_layout
+
 
 def register_callbacks(app):
     @app.callback(
@@ -56,6 +58,8 @@ def register_callbacks(app):
             return pledge_perf_layout()
         elif pathname == "/notes":
             return notes_layout()
+        elif pathname == "/chat_llm":
+            return chat_llm_layout()
         elif pathname == "/" or pathname == "":  # Cuando es la raíz
             return home_layout()
         else:
@@ -65,7 +69,9 @@ def register_callbacks(app):
     from src.callbacks.objectics_callbacks import register_objective_callbacks
     from src.callbacks.money_moved_callbacks import register_money_moved_callbacks
     from src.callbacks.pledge_perf_callbacks import register_performance_callbacks
+    from src.callbacks.chat_llm_callbacks import register_chat_llm_callbacks
 
     register_objective_callbacks(app)
     register_money_moved_callbacks(app)
     register_performance_callbacks(app)
+    register_chat_llm_callbacks(app)
