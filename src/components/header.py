@@ -25,7 +25,7 @@ def create_header():
                         dbc.NavItem(
                             dbc.NavLink(
                                 [html.I(className="fab fa-github me-2"), "GitHub"],
-                                href="https://github.com/Alonsomar",
+                                href="https://github.com/Alonsomar/oftw_challenge",
                                 external_link=True,
                                 className="nav-link-custom"
                             )
