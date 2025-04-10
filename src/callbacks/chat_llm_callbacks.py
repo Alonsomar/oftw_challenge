@@ -4,8 +4,9 @@ import os
 import json
 import openai
 import pandas as pd
-
+from datetime import datetime
 from dash.dependencies import Input, Output, State
+from dash import html, no_update, dcc
 from src.utils.cache import cache
 from src.utils.callbacks_filter import get_filtered_data
 from dotenv import load_dotenv
@@ -88,12 +89,67 @@ def create_rich_context(payments_df: pd.DataFrame, pledges_df: pd.DataFrame) -> 
     # Join everything into a single text block
     return "\n".join(context_lines)
 
+def create_message_div(content, is_user=False):
+    """Create a styled message div for the chat interface."""
+    timestamp = datetime.now().strftime("%H:%M")
+    
+    # For user messages, use plain text
+    if is_user:
+        content_div = html.Div(
+            content,
+            className="message-content"
+        )
+    # For assistant messages, use markdown
+    else:
+        content_div = dcc.Markdown(
+            content,
+            className="message-content",
+            style={
+                "whiteSpace": "pre-wrap",
+                "fontSize": "var(--font-size-base)",
+                "lineHeight": "1.5"
+            }
+        )
+    
+    return html.Div(
+        [
+            content_div,
+            html.Div(
+                timestamp,
+                className="message-timestamp"
+            )
+        ],
+        className=f"chat-message {'user' if is_user else 'assistant'}"
+    )
+
+def create_loading_div():
+    """Create a simple loading message."""
+    return html.Div(
+        [
+            html.Div(
+                "⏳ Processing your question... Please wait.",
+                style={
+                    "color": "var(--text-secondary)",
+                    "fontSize": "var(--font-size-base)",
+                    "padding": "1rem",
+                    "backgroundColor": "var(--background-card)",
+                    "borderRadius": "var(--border-radius)",
+                    "border": "1px solid var(--border-color)",
+                    "margin": "0.5rem 0"
+                }
+            )
+        ],
+        className="assistant-message"
+    )
+
 def register_chat_llm_callbacks(app):
     @app.callback(
-        Output("chat-llm-response", "children"),
+        [Output("chat-messages-container", "children"),
+         Output("chat-llm-input", "value")],
         [Input("chat-llm-submit", "n_clicks")],
         [
             State("chat-llm-input", "value"),
+            State("chat-messages-container", "children"),
             Input("year-filter", "value"),
             Input("portfolio-filter", "value"),
             Input("year-mode", "value")
@@ -101,42 +157,51 @@ def register_chat_llm_callbacks(app):
         prevent_initial_call=True
     )
     @cache.memoize(timeout=300)  # optional caching for repeated queries
-    def run_chat_llm(n_clicks, user_question, selected_years, selected_portfolios, year_mode):
+    def run_chat_llm(n_clicks, user_question, current_messages, selected_years, selected_portfolios, year_mode):
         """
         Calls the OpenAI API (or another LLM) to answer the user's question,
         using filtered data as context (if any).
         """
-
-        # 1) Check if there's a question at all
         if not user_question:
-            return "Please enter a question before hitting 'Send'."
+            return no_update, ""
 
-        # 2) Check the character limit
+        # Initialize messages list if None
+        if current_messages is None:
+            current_messages = []
+
+        # Check the character limit
         if not check_question_length(user_question):
-            return (
-                "Your question is too long. Please keep it under 300 characters "
-                "and try again."
+            error_message = create_message_div(
+                "Your question is too long. Please keep it under 300 characters and try again.",
+                is_user=False
             )
+            return current_messages + [error_message], ""
 
-        # 3) Prepare the filtered data context
+        # Add user message to chat
+        user_message = create_message_div(user_question, is_user=True)
+        current_messages = current_messages + [user_message]
+
+        # Add loading indicator
+        loading_div = create_loading_div()
+        current_messages = current_messages + [loading_div]
+
+        # Prepare the filtered data context
         payments_df, pledges_df = get_filtered_data(selected_years, selected_portfolios, year_mode)
-
-        # Build a robust context summary
         context_text = create_rich_context(payments_df, pledges_df)
 
-        # 4) Build the system message and user prompt
+        # Build the system message and user prompt
         system_prompt = """
             You are a specialized data assistant for the One for the World (OFTW) organization. You have access to the following high-level context about the data, metrics, and codebase:    
             1) **Data & Datasets**:
                - **Pledges dataset** (pledge_id, donor_id, donor_chapter, chapter_type, pledge_status, pledge_created_at, pledge_starts_at, pledge_ended_at, contribution_amount, currency, frequency, payment_platform). 
-                 - Each pledge records a donor’s intention to give recurring or one-time donations. It may be active, pledged (i.e. starting in the future), or canceled.
+                 - Each pledge records a donor's intention to give recurring or one-time donations. It may be active, pledged (i.e. starting in the future), or canceled.
                - **Payments dataset** (id, donor_id, payment_platform, portfolio, amount, currency, date, counterfactuality, pledge_id).
-                 - Each payment is an actual monetary transaction made by a donor on a certain date and might belong to a pledge. The "counterfactuality" factor (0–1) represents how much of this donation is truly attributable to OFTW’s influence.
+                 - Each payment is an actual monetary transaction made by a donor on a certain date and might belong to a pledge. The "counterfactuality" factor (0–1) represents how much of this donation is truly attributable to OFTW's influence.
             
             2) **Core Metrics & Definitions**:
-               - **Money Moved**: The sum of relevant donations, converted to USD. This excludes certain portfolios such as “One for the World Discretionary Fund” or “One for the World Operating Costs,” focusing on the recommended charities.
-               - **Counterfactual Money Moved**: Each donation multiplied by its counterfactual factor, to capture how much was uniquely caused by OFTW’s influence.
-               - **Annualized Run Rate (ARR)**: A projection of yearly donation amounts based on the frequency in pledges (e.g., monthly pledges get multiplied by 12, quarterly by 4, etc.). Often subdivided into Active ARR (for “Active donor” pledges) and Future ARR (for “Pledged donor”).
+               - **Money Moved**: The sum of relevant donations, converted to USD. This excludes certain portfolios such as "One for the World Discretionary Fund" or "One for the World Operating Costs," focusing on the recommended charities.
+               - **Counterfactual Money Moved**: Each donation multiplied by its counterfactual factor, to capture how much was uniquely caused by OFTW's influence.
+               - **Annualized Run Rate (ARR)**: A projection of yearly donation amounts based on the frequency in pledges (e.g., monthly pledges get multiplied by 12, quarterly by 4, etc.). Often subdivided into Active ARR (for "Active donor" pledges) and Future ARR (for "Pledged donor").
                - **Pledge Performance**: Tracks the total of all pledges (active + future), the monthly attrition rate (how many pledges are lost or fail), and breakdowns by channel or chapter type.
                - **OKRs / Wishlist Metrics** (examples):
                  - Target $1.8M Money Moved by 2025,
@@ -147,13 +212,13 @@ def register_chat_llm_callbacks(app):
             
             3) **Filters**:
                - Users can filter the data by:
-                 - **Year mode**: either “calendar” (Jan–Dec) or “fiscal” (Jul–Jun).
+                 - **Year mode**: either "calendar" (Jan–Dec) or "fiscal" (Jul–Jun).
                  - **Year(s)**: e.g. 2023, 2024, etc., which define date ranges depending on the year mode.
-                 - **Portfolio**: e.g., “OFTW Top Picks,” “Entire OFTW Portfolio,” or custom top picks.
+                 - **Portfolio**: e.g., "OFTW Top Picks," "Entire OFTW Portfolio," or custom top picks.
             
             4) **Technical/Code Structure**:
                - The codebase is a Dash application with separate pages (Home, Money Moved, Pledge Performance, Objectives & Key Results, Notes, plus a new Chat LLM page).
-               - The data ingestion converts all amounts to USD using historical currency rates, ignoring “One for the World Discretionary Fund” or “Operating Costs” in main metrics.
+               - The data ingestion converts all amounts to USD using historical currency rates, ignoring "One for the World Discretionary Fund" or "Operating Costs" in main metrics.
                - A variety of metrics are computed in dedicated modules (e.g., `money_metrics`, `performance_metrics`, `objectics_metrics`).
                - The user can combine filters (year, year-mode, portfolio) to see custom slices of the data.
             
@@ -162,7 +227,7 @@ def register_chat_llm_callbacks(app):
                - Remain consistent with the above definitions of money moved, pledge statuses, and methodological assumptions.
                - If a user asks about specific calculations or code references, rely on these data definitions and the typical approach in the code (ARR = frequency factor × contribution amount in USD, etc.).
                - If uncertain because the code or data does not specify details, politely say you do not have enough information.
-               - If the user’s question is longer than allowed or if it contradicts known constraints, provide an appropriate disclaimer.
+               - If the user's question is longer than allowed or if it contradicts known constraints, provide an appropriate disclaimer.
             
             Your main objective: Provide coherent, concise, and accurate answers about the OFTW data, metrics, and logic described in the codebase. Do not fabricate details that are not supported by the provided context. If asked about numeric results, use the actual data context available (or disclaim you do not have it if not included).
             
@@ -174,7 +239,7 @@ def register_chat_llm_callbacks(app):
             f"User Question:\n{user_question}"
         )
 
-        # 5) Call the OpenAI Chat Completion endpoint
+        # Call the OpenAI Chat Completion endpoint
         try:
             response = openai_client.chat.completions.create(
                 model="gpt-4o-mini",  # Adjust to the model you want to use
@@ -189,4 +254,9 @@ def register_chat_llm_callbacks(app):
         except Exception as e:
             answer = f"Error while calling the LLM: {e}"
 
-        return answer
+        # Remove loading indicator and add assistant's response
+        current_messages = current_messages[:-1]  # Remove loading indicator
+        assistant_message = create_message_div(answer, is_user=False)
+        current_messages = current_messages + [assistant_message]
+
+        return current_messages, ""  # Clear the input field

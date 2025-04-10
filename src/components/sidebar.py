@@ -24,18 +24,18 @@ NAV_ITEMS = [
         "description": "Analyze pledge metrics"
     },
     {
-        "id": "pledge",
-        "icon": "fas fa-note-sticky",
-        "title": "Methodology & Notes",
-        "href": "/notes",
-        "description": "Details on calculation and assumptions"
-    },
-    {
         "id": "chat-llm",
         "icon": "fas fa-comments",
         "title": "LLM Chat",
         "href": "/chat_llm",
         "description": "Chat with the data"
+    },
+    {
+        "id": "pledge",
+        "icon": "fas fa-note-sticky",
+        "title": "Methodology & Notes",
+        "href": "/notes",
+        "description": "Details on calculation and assumptions"
     }
 ]
 
